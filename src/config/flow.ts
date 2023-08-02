@@ -7,7 +7,7 @@ export const settingConfig = {
     onceEnlarge: 0.1,
   },
   cls: {
-    linkType: 'Flowchart',
+    linkType: 'Bezier',
     linkColor: '#2a2929',
     linkThickness: 2,
   },
