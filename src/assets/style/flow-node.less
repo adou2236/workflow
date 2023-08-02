@@ -1,0 +1,112 @@
+@common-node-bg: #f4f6fc;
+@common-node-bg-hover: #f4f6fcb0;
+@common-node-active: rgba(85, 85, 85, 0.39);
+@primary-color: #FF6D5A;
+
+
+.node-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  height: 80px;
+  width: 80px;
+  line-height: 80px;
+  text-align: center;
+  border: 1px solid #777;
+  border-radius: 5px;
+  background-color: @common-node-bg;
+  white-space: nowrap;
+  box-shadow: 2px 2px 5px #ddd;
+  &:hover {
+    background-color: @common-node-bg-hover;
+    z-index: 2;
+  }
+
+  &.active {
+    outline: 4px solid @common-node-active;
+    outline-offset: 0;
+  }
+
+  &.isStart {
+  }
+
+  &.isEnd {
+  }
+}
+
+.anchor-item > label{
+  background-color: rgba(213, 213, 213, 0.85);
+  color: rgb(85, 85, 85);
+  border-radius: 7px;
+  font-size: 12px;
+  line-height: 12px;
+  height: 12px;
+  padding: 2px;
+  white-space: nowrap;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%) scale(0.6);
+}
+
+.node-icon{
+  width: 60%;
+  height: 60%;
+}
+.node-setting{
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  cursor: pointer;
+  display: flex;
+  &:hover{
+    color: @primary-color;
+
+  }
+}
+.node-tools{
+  position: absolute;
+  top: -25px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100px;
+  display: flex;
+  justify-content: center;
+  & > i {
+    cursor: pointer;
+  }
+}
+.node-description {
+  position: absolute;
+  top: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  line-height: 1.5;
+  text-align: center;
+  cursor: default;
+  padding: 8px;
+  width: 100px;
+  pointer-events: none; // prevent container from being draggable
+
+  .node-name > p {
+    // must be paragraph tag to have two lines in safari
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    overflow-wrap: anywhere;
+    font-weight: var(--font-weight-bold);
+    line-height: var(--font-line-height-compact);
+    margin: 0;
+  }
+
+  .node-subtitle {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-weight: 400;
+    color: #000;
+    font-size: 0.8em;
+  }
+}
