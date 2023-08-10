@@ -1,5 +1,5 @@
-import { idType as flowIdType } from '/@/config/flow';
-import { IdTypeEnum } from '/@/type/enums';
+import { idType as flowIdType } from '@/config/flow';
+import { IdTypeEnum } from '@/type/enums';
 
 export const utils = {
   seqNo: 1,

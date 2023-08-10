@@ -21,6 +21,7 @@
         grid: flowData.config.showGrid,
         canDrag: container.dragFlag,
         canMultiple: rectangleMultiple.flag,
+        readOnly: props.readOnly,
       }"
       :style="gridStyle"
       @click="containerHandler"
@@ -43,6 +44,7 @@
         @isMultiple="isMultiple"
         @updateNodePos="updateNodePos"
         @updateNodeDisable="updateNodeDisable"
+        @nodeDelete="deleteNode"
         @setNodeParams="(v) => emits('setNodeParams', v)"
         @alignForLine="alignForLine"
         @hideAlignLine="hideAlignLine"
@@ -76,16 +78,16 @@
 
 <script lang="ts" setup>
   import { reactive, ref, computed, watch, unref, PropType, nextTick, onMounted } from 'vue';
-  import { message } from 'ant-design-vue';
-  import { utils } from '/@/utils/common';
+  import { utils } from '@/utils/common';
   import FlowNode from './FlowNode.vue';
   import { useContextMenu } from '@/hooks/useContextMenu';
-  import { CommonNodeTypeEnum, LaneNodeTypeEnum, FlowStatusEnum } from '/@/type/enums';
+  import { CommonNodeTypeEnum, FlowStatusEnum } from '@/type/enums';
   import { INode, ILink, IElement } from '@/type';
-  import { commonNodes } from '/@/config/nodes';
-  import { useAlign } from '/@/hooks/useAlign';
+  import { commonNodes } from '@/config/nodes';
   import { jsPlumb } from 'jsplumb';
-  import { __addInputEndpoints, __addOutputEndpoints } from '@/utils/nodeBase';
+  import funcInstall from '@/utils';
+  import { __addNode, __addLink } from '@/utils/nodeBase';
+  import { flowConfig as defaultConfig } from '@/config/flow';
 
   const props = defineProps({
     data: {
@@ -94,7 +96,7 @@
     },
     config: {
       type: Object,
-      default: () => ({}),
+      default: () => undefined,
     },
     select: {
       type: Object as PropType<INode | ILink>,
@@ -103,10 +105,6 @@
     selectGroup: {
       type: Array as PropType<INode[]>,
       default: () => [],
-    },
-    dragInfo: {
-      type: Object as PropType<IElement>,
-      default: () => ({}),
     },
     readOnly: {
       type: Boolean,
@@ -124,22 +122,16 @@
     'update:data',
   ]);
 
-  const {
-    verticaLeft,
-    verticalCenter,
-    verticalRight,
-    horizontalUp,
-    horizontalCenter,
-    horizontalDown,
-  } = useAlign();
-
   const [createContextMenu] = useContextMenu();
 
   // 流程实例
   const plumb = ref();
 
+  // 流程当前状态
+  const status = ref();
+
   // 流程配置
-  const flowConfig = reactive(props.config);
+  const flowConfig = reactive(props.config || defaultConfig);
 
   // 流程DSL数据
   const flowData = ref(props.data);
@@ -152,8 +144,8 @@
 
   const container = reactive({
     pos: {
-      top: 0,
-      left: 0,
+      top: -5000,
+      left: -5000,
     },
     dragFlag: false,
     draging: false,
@@ -193,7 +185,7 @@
 
   // 鼠标划框多选
   const rectangleMultiple = reactive({
-    flag: false, // 是否按了shift键
+    flag: true, // 是否按了shift键
     multipling: false,
     position: {
       top: 0,
@@ -231,7 +223,7 @@
     node = commonNodes.find((n) => n.nodeName === nodeName);
 
     if (!node) {
-      message.error('未知的节点类型！');
+      console.error('未知的节点类型！');
       return;
     }
 
@@ -240,13 +232,14 @@
   }
 
   // 组件拖拽入画布
-  function handleDrop() {
+  function handleDrop(event) {
+    if (props.readOnly) return;
     // 复位拖拽工具
-    addNewNode(props.dragInfo);
+    let dragInfo = event.dataTransfer.getData('dragInfo');
+    addNewNode(JSON.parse(dragInfo));
     nextTick(() => {
       emits('addNode');
     });
-    // findNodeConfig(props.dragInfo);
   }
 
   // 画布鼠标移动
@@ -328,37 +321,16 @@
 
     let newNode = Object.assign({}, node) as INode;
     newNode.id = newNode.type + '-' + utils.getId();
-    newNode.height = 50;
-    if (
-      newNode.type === CommonNodeTypeEnum.START ||
-      newNode.type === CommonNodeTypeEnum.END ||
-      newNode.type === CommonNodeTypeEnum.EVENT ||
-      newNode.type === CommonNodeTypeEnum.GATEWAY
-    ) {
+    if (newNode.type === CommonNodeTypeEnum.NOTE) {
       newNode.x = x - 25;
-      newNode.width = 50;
+      newNode.y = y - 25;
     } else {
-      newNode.x = x - 60;
-      newNode.width = 120;
-    }
-    newNode.y = y - 25;
-    if (newNode.type === LaneNodeTypeEnum.X_LANE) {
-      newNode.height = 200;
-      newNode.width = 500;
-    } else if (newNode.type === LaneNodeTypeEnum.Y_LANE) {
-      newNode.height = 500;
-      newNode.width = 200;
+      newNode.x = x - 40;
+      newNode.y = y - 40;
     }
     unref(flowData).nodeList.push(newNode);
     nextTick(() => {
-      let input = __addInputEndpoints(newNode);
-      let output = __addOutputEndpoints(newNode);
-      input.forEach((anchor) => {
-        plumb.value.addEndpoint(newNode.id, anchor);
-      });
-      output.forEach((anchor) => {
-        plumb.value.addEndpoint(newNode.id, anchor);
-      });
+      __addNode(plumb.value, newNode);
       emits('update:data', unref(flowData));
     });
   }
@@ -372,7 +344,7 @@
       }
 
       currentSelectGroup.value = [];
-      if (rectangleMultiple.flag) {
+      if (true) {
         mouse.tempPos = mouse.position;
         rectangleMultiple.multipling = true;
       }
@@ -382,7 +354,7 @@
   // 画布鼠标点击松开
   function mouseupHandler() {
     if (container.draging) container.draging = false;
-    if (rectangleMultiple.multipling) {
+    if (true) {
       // 鼠标划框内的节点
       judgeSelectedNode();
       rectangleMultiple.multipling = false;
@@ -444,6 +416,7 @@
 
   // 画布右健
   function showContainerContextMenu(e: MouseEvent) {
+    if (props.readOnly) return;
     createContextMenu({
       event: e,
       items: [
@@ -471,83 +444,13 @@
           },
           label: '保存流程',
         },
-        {
-          label: '对齐方式',
-          children: [
-            {
-              handler: () => {
-                verticaLeft({
-                  currentSelectGroup: unref(currentSelectGroup),
-                  flowData: props.data,
-                  flowConfig: props.config,
-                  plumb: plumb.value,
-                });
-              },
-              label: '垂直左对齐',
-            },
-            {
-              handler: () => {
-                verticalCenter({
-                  currentSelectGroup: unref(currentSelectGroup),
-                  flowData: props.data,
-                  flowConfig: props.config,
-                  plumb: plumb.value,
-                });
-              },
-              label: '垂直居中',
-            },
-            {
-              handler: () => {
-                verticalRight({
-                  currentSelectGroup: unref(currentSelectGroup),
-                  flowData: props.data,
-                  flowConfig: props.config,
-                  plumb: plumb.value,
-                });
-              },
-              label: '垂直右对齐',
-            },
-            {
-              handler: () => {
-                horizontalUp({
-                  currentSelectGroup: unref(currentSelectGroup),
-                  flowData: props.data,
-                  flowConfig: props.config,
-                  plumb: plumb.value,
-                });
-              },
-              label: '水平上对齐',
-            },
-            {
-              handler: () => {
-                horizontalCenter({
-                  currentSelectGroup: unref(currentSelectGroup),
-                  flowData: props.data,
-                  flowConfig: props.config,
-                  plumb: plumb.value,
-                });
-              },
-              label: '水平居中',
-            },
-            {
-              handler: () => {
-                horizontalDown({
-                  currentSelectGroup: unref(currentSelectGroup),
-                  flowData: props.data,
-                  flowConfig: props.config,
-                  plumb: plumb.value,
-                });
-              },
-              label: '水平下对齐',
-            },
-          ],
-        },
       ],
     });
   }
 
   // 节点右键
-  function showNodeContextMenu(e: MouseEvent) {
+  function showNodeContextMenu(e: MouseEvent, node) {
+    if (props.readOnly) return;
     createContextMenu({
       event: e,
       items: [
@@ -559,7 +462,7 @@
         },
         {
           handler: () => {
-            deleteNode();
+            deleteNode(node);
           },
           label: '删除节点',
         },
@@ -571,7 +474,7 @@
   function flowInfo() {
     let nodeList = unref(flowData).nodeList;
     let linkList = unref(flowData).linkList;
-    message.info(
+    console.info(
       '当前流程图中有 ' + nodeList.length + ' 个节点，有 ' + linkList.length + ' 条连线。',
     );
   }
@@ -626,14 +529,12 @@
   }
 
   // 删除节点
-  function deleteNode() {
+  function deleteNode(nodes: INode[] | INode) {
     let nodeList = unref(flowData).nodeList;
     let linkList = unref(flowData).linkList;
-    let arr: INode[] = [];
+    let arr: INode[] = Array.isArray(nodes) ? nodes : [nodes];
 
-    arr.push(Object.assign({}, unref(currentSelect) as INode));
-
-    unref(flowData).status = FlowStatusEnum.LOADING;
+    status.value = FlowStatusEnum.LOADING;
 
     arr.forEach((c) => {
       let conns = getConnectionsByNodeId(c.id);
@@ -657,7 +558,7 @@
         .forEach((endpoint) => plumb.value?.deleteEndpoint(endpoint));
       nodeList.splice(inx, 1);
     });
-    unref(flowData).status = FlowStatusEnum.CREATE;
+    status.value = FlowStatusEnum.CREATE;
     emits('update:data', unref(flowData));
     selectContainer();
   }
@@ -688,7 +589,7 @@
       f.y = t;
     });
   }
-  // 跟新节点可以状态
+  // 更新节点可以状态
   function updateNodeDisable(node: INode) {
     let { disabled } = node;
     let nodeList = unref(flowData).nodeList;
@@ -704,6 +605,7 @@
       let nodeList = unref(flowData).nodeList;
       nodeList.forEach((node: INode) => {
         if (elId !== node.id) {
+          let nodeDom = document.getElementById(node.id);
           let dis = flowConfig.defaultStyle.showAuxiliaryLineDistance,
             elPos = e.pos,
             elH = e.el.offsetHeight,
@@ -713,7 +615,7 @@
           if ((disX >= -dis && disX <= dis) || (disX + elW >= -dis && disX + elW <= dis)) {
             container.auxiliaryLine.isShowYLine = true;
             auxiliaryLinePos.x = node.x + container.pos.left;
-            let nodeMidPointX = node.x + node.width / 2;
+            let nodeMidPointX = node.x + nodeDom!.offsetWidth / 2;
             if (nodeMidPointX === elPos[0] + elW / 2) {
               auxiliaryLinePos.x = nodeMidPointX + container.pos.left;
             }
@@ -721,7 +623,7 @@
           if ((disY >= -dis && disY <= dis) || (disY + elH >= -dis && disY + elH <= dis)) {
             container.auxiliaryLine.isShowXLine = true;
             auxiliaryLinePos.y = node.y + container.pos.top;
-            let nodeMidPointY = node.y + node.height / 2;
+            let nodeMidPointY = node.y + nodeDom!.offsetHeight / 2;
             if (nodeMidPointY === elPos[1] + elH / 2) {
               auxiliaryLinePos.y = nodeMidPointY + container.pos.left;
             }
@@ -767,23 +669,22 @@
       let o: Recordable = {};
       let id = '';
       let label = '';
-      if (
-        flowData.value.status === FlowStatusEnum.CREATE ||
-        flowData.value.status === FlowStatusEnum.MODIFY
-      ) {
+      if (status.value === FlowStatusEnum.CREATE || status.value === FlowStatusEnum.MODIFY) {
         id = 'link-' + utils.getId();
         label = '';
-      } else if (flowData.value.status === FlowStatusEnum.LOADING) {
-        let l = flowData.value.linkList[flowData.value.linkList.length - 1];
+      } else if (status.value === FlowStatusEnum.LOADING) {
+        let l = conn.connection.getParameters();
         id = l.id;
         label = l.label;
       }
       connObj.id = id;
       o.type = 'link';
       o.id = id;
+      o.label = label;
       o.sourceId = conn.sourceId;
       o.targetId = conn.targetId;
-      o.label = label;
+      o.sourceEndpoint = conn.sourceEndpoint.getParameters().endpoint;
+      o.targetEndpoint = conn.targetEndpoint.getParameters().endpoint;
       o.cls = {
         linkType: unref(flowConfig).jsPlumbInsConfig.Connector?.[0],
         linkColor: unref(flowConfig).jsPlumbInsConfig.PaintStyle?.stroke,
@@ -799,11 +700,51 @@
         currentSelect.value = flowData.value.linkList.find((l: ILink) => l.id === id);
       });
 
-      if (flowData.value.status !== FlowStatusEnum.LOADING) flowData.value.linkList.push(o);
+      if (status.value !== FlowStatusEnum.LOADING) {
+        delete o.cls;
+        flowData.value.linkList.push(o);
+      }
     });
 
     unref(plumb).importDefaults({
       ConnectionsDetachable: unref(flowConfig).jsPlumbConfig.conn.isDetachable,
+    });
+  }
+
+  // 数据初始化
+  function dataInit() {
+    status.value = FlowStatusEnum.LOADING;
+    if (flowData.value.nodeList.length > 0) {
+      flowData.value.nodeList.forEach((item) => {
+        __addNode(plumb.value, item);
+      });
+    }
+    if (flowData.value.linkList.length > 0) {
+      flowData.value.linkList.forEach((item) => {
+        __addLink(
+          plumb.value,
+          { id: item.sourceId, endpoint: item.sourceEndpoint },
+          { id: item.targetId, endpoint: item.targetEndpoint },
+          { id: item.id, label: item.label },
+        );
+      });
+    }
+    status.value = FlowStatusEnum.MODIFY;
+  }
+
+  function canvasInit() {
+    window.document.getElementsByClassName('flow-area')[0].scrollTo(5000, 5000);
+  }
+
+  function setReadOnly(flag: boolean) {
+    unref(plumb).setSuspendDrawing(flag);
+    const connections = unref(plumb).getAllConnections();
+    connections.forEach((connection) => {
+      connection.setDetachable(!flag);
+    });
+    const nodes = unref(flowData).nodeList;
+    nodes.forEach((node) => {
+      unref(plumb).setDraggable(document.getElementById(node.id), !flag);
     });
   }
 
@@ -844,11 +785,21 @@
 
   onMounted(() => {
     initJsPlumb();
+    dataInit();
+    nextTick(() => {
+      // setReadOnly(props.readOnly);
+    });
+    // canvasInit();
   });
 
   defineExpose({
     container,
     rectangleMultiple,
+    deleteNode,
+    narrowContainer,
+    enlargeContainer,
+    plumb,
+    ...funcInstall({ flowData: flowData, plumb: plumb }),
   });
 
   watch(
@@ -891,5 +842,12 @@
       emits('update:selectGroup', val);
     },
     { deep: true },
+  );
+
+  watch(
+    () => props.readOnly,
+    (v) => {
+      // setReadOnly(v);
+    },
   );
 </script>

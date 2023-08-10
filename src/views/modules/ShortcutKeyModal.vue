@@ -19,8 +19,8 @@
 
 <script lang="ts" setup>
   import { ref, watch } from 'vue';
-  import { shortcutKeys } from '/@/config/shortcutKeys';
-  import { IShortcutKey } from '/@/type/index';
+  import { shortcutKeys } from '@/config/shortcutKeys';
+  import { IShortcutKey } from '@/type/index';
 
   const props = defineProps({
     shortcutVisible: {

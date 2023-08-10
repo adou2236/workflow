@@ -1,6 +1,6 @@
 import type { INode } from '@/type';
-import { flowConfig, settingConfig } from '@/config/flow';
-import { jsPlumbInstance } from 'jsplumb';
+import { Endpoint, EndpointOptions, jsPlumbInstance } from 'jsplumb';
+import { FLOW_TYPE } from '@/type/enums';
 
 export const getEndpointUUID = (nodeId: string, type: string, outputIndex: number) => {
   return `${nodeId}${type}${outputIndex}`;
@@ -49,12 +49,13 @@ export const ANCHOR_POSITIONS: {
   },
 };
 // 新增数据锚点
-export function __addInputEndpoints(node: INode) {
+export function __addInputEndpoints(node: INode): EndpointOptions[] {
   let index;
   const indexData: {
     [key: string]: number;
   } = {};
 
+  // @ts-ignore
   return node.inputs.map((inputName: string, i: number) => {
     // Increment the index for inputs with current name
     if (indexData.hasOwnProperty(inputName)) {
@@ -68,8 +69,12 @@ export function __addInputEndpoints(node: INode) {
 
     const newEndpointData = {
       uuid: getEndpointUUID(node.id, 'input', index),
+      parameters: {
+        endpoint: inputName,
+      },
       anchor: anchorPosition,
-      maxConnections: 2,
+      reattach: true,
+      maxConnections: -1,
       endpoint: 'Rectangle',
       paintStyle: {
         width: 4,
@@ -124,12 +129,13 @@ export function __addInputEndpoints(node: INode) {
 }
 
 // 新增输出锚点
-export function __addOutputEndpoints(node: INode) {
+export function __addOutputEndpoints(node: INode): EndpointOptions[] {
   let index;
   const indexData: {
     [key: string]: number;
   } = {};
 
+  // @ts-ignore
   return node.outputs.map((inputName: string, i: number) => {
     // Increment the index for outputs with current name
     if (indexData.hasOwnProperty(inputName)) {
@@ -144,7 +150,11 @@ export function __addOutputEndpoints(node: INode) {
 
     const newEndpointData = {
       uuid: getEndpointUUID(node.id, 'output', index),
+      parameters: {
+        endpoint: inputName,
+      },
       anchor: anchorPosition,
+      reattach: true,
       maxConnections: -1,
       endpoint: ['Dot', { radius: 6 }],
       paintStyle: {
@@ -188,7 +198,48 @@ export function __addOutputEndpoints(node: INode) {
 }
 
 // 新增节点
-export function __addNode(node: INode) {
-  __addInputEndpoints(node);
-  __addOutputEndpoints(node);
+export function __addNode(instance: jsPlumbInstance, node: INode) {
+  const { flowType } = node;
+  let input = [] as EndpointOptions[];
+  let output = [] as EndpointOptions[];
+  if (flowType !== FLOW_TYPE.TRIGGER) {
+    input = __addInputEndpoints(node);
+  }
+  output = __addOutputEndpoints(node);
+  input.forEach((anchor) => {
+    instance.addEndpoint(node.id, anchor);
+  });
+  output.forEach((anchor) => {
+    instance.addEndpoint(node.id, anchor);
+  });
+}
+
+// 新增链接
+export function __addLink(
+  instance: jsPlumbInstance,
+  source: { id: string; endpoint: string },
+  target: { id: string; endpoint: string },
+  parameters,
+) {
+  const sourceEndpoints = instance.getEndpoints(source.id);
+  const targetEndpoints = instance.getEndpoints(target.id);
+  let sourceEndpoint = null as Endpoint | null;
+  let targetEndpoint = null as Endpoint | null;
+  sourceEndpoints.forEach((item) => {
+    if (item.getParameters()?.endpoint === source.endpoint) {
+      sourceEndpoint = item;
+    }
+  });
+  targetEndpoints.forEach((item) => {
+    if (item.getParameters()?.endpoint === target.endpoint) {
+      targetEndpoint = item;
+    }
+  });
+  if (sourceEndpoint && targetEndpoint) {
+    instance.connect({
+      source: sourceEndpoint,
+      target: targetEndpoint,
+      parameters,
+    });
+  }
 }

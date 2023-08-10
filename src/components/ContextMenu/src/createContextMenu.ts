@@ -40,7 +40,7 @@ export const createContextMenu = function (options: CreateContextOptions) {
     render(vm, container);
 
     const handleClick = function () {
-      menuManager.resolve('');
+      menuManager.resolve(options);
     };
 
     menuManager.domList.push(container);

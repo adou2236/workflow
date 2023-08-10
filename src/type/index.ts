@@ -4,13 +4,14 @@ import {
   CommonNodeTypeEnum,
   HighNodeTypeEnum,
   LaneNodeTypeEnum,
+  FLOW_TYPE,
 } from './enums';
 
-import { settingConfig } from '../config/flow';
+import { settingConfig } from '@/config/flow';
 
 export type NodesType = CommonNodeTypeEnum | HighNodeTypeEnum | LaneNodeTypeEnum;
 
-export interface IDragInfo extends IElement{
+export interface IDragInfo extends IElement {
   belongTo: Nullable<NodeTypeEnum>;
 }
 
@@ -23,9 +24,11 @@ export interface ITool {
 export interface IElement {
   type: NodesType;
   nodeName: string; //节点唯一名称
-  icon: string;
+  flowType: FLOW_TYPE; // 节点角色 触发器or响应器
+  icon: string; // string or http
   inputs: string[];
   outputs: string[];
+  args?: string[]; // 模拟形参
   parameters?: {
     options: any;
     rule: any;
@@ -33,15 +36,13 @@ export interface IElement {
 }
 
 export interface INode extends IElement {
-  height: number;
   id: string;
-  width: number;
   x: number;
   y: number;
   displayName?: string; //节点展示名称
   description?: string; //节点描述
   disabled?: boolean; //是否禁用
-  manualTrigger?: boolean; //是否是触发器
+  value?: object; // 节点内表单
 }
 
 export interface ILink {

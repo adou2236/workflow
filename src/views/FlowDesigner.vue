@@ -1,14 +1,15 @@
 <template>
   <el-container class="flow-wrapper">
     <!-- 左侧边组件元素 -->
-    <flow-element @setDragInfo="setDragInfo" />
+    <el-drawer :model-value="true">
+      <flow-element @setDragInfo="setDragInfo" />
+    </el-drawer>
     <el-container class="is-vertical">
       <!-- 工具区 -->
       <Toolbar
         :currentTool="currentTool"
         :flowData="flowData"
         v-model:readOnly="readOnly"
-        :readOnly="readOnly"
         @showData="showData"
         @generateFlowImage="
           generateFlowImage(
@@ -28,8 +29,8 @@
       <el-main class="flow-content">
         <flow-area
           ref="flowAreaRef"
-          :dragInfo="dragInfo"
           :config="flowConfig"
+          :read-only="readOnly"
           v-model:data="flowData"
           v-model:select="currentSelect"
           v-model:selectGroup="currentSelectGroup"
@@ -47,6 +48,7 @@
       </el-form>
       <el-divider />
       <Fc
+        v-if="nodeSettingDrawer"
         :rule="currentSelect.parameters.rule"
         :option="currentSelect.parameters.options"
         @submit="onSubmit"
@@ -86,9 +88,7 @@
 
 <script lang="ts" setup>
   import { reactive, ref, onMounted, unref, nextTick } from 'vue';
-  import { message } from 'ant-design-vue';
   import { cloneDeep } from 'lodash-es';
-  import { ls } from 'vue-lsp';
   import FlowArea from './modules/FlowArea.vue';
   import FlowElement from './modules/FlowElement.vue';
   import Toolbar from './modules/Toolbar.vue';
@@ -96,16 +96,14 @@
   import { tools } from '@/config/tools';
   import { INode, ILink, ITool, IElement } from '@/type';
   import { FlowStatusEnum } from '@/type/enums';
-  import { utils, setFlowConfig } from '@/utils/common';
-  import { useContextMenu } from '@/hooks/useContextMenu';
-  import { useGenerateFlowImage } from '/@/hooks/useGenerateFlowImage';
+  import { utils } from '@/utils/common';
+  import { useGenerateFlowImage } from '@/hooks/useGenerateFlowImage';
   import { useShortcutKey } from '@/hooks/useShortcutKey';
-  import { flowConfig as defaultFlowConfig, settingConfig } from '@/config/flow';
+  import { flowConfig as defaultFlowConfig } from '@/config/flow';
   import { JsonViewer } from 'vue3-json-viewer';
   import 'vue3-json-viewer/dist/index.css';
 
   const Fc = formCreate.$form();
-  const [createContextMenu] = useContextMenu();
 
   // 生成流程图片
   const { flowImage, downLoadFlowImage, cancelDownLoadFlowImage, generateFlowImage } =
@@ -145,17 +143,351 @@
   const dialogVisible = ref<boolean>(false);
 
   // 流程DSL
+  // const flowData = reactive<Recordable>({
+  //   nodeList: [],
+  //   linkList: [],
+  //   attr: {
+  //     id: '',
+  //   },
+  //   config: {
+  //     showGrid: true,
+  //     showGridText: '隐藏网格',
+  //   },
+  //   status: FlowStatusEnum.CREATE,
+  // });
   const flowData = reactive<Recordable>({
-    nodeList: [],
-    linkList: [],
+    nodeList: [
+      {
+        type: 'common',
+        nodeName: '触发器0',
+        icon: 'Bell',
+        inputs: [],
+        outputs: ['output1'],
+        formalParameter: ['key', 'name'],
+        flowType: 'trigger',
+        parameters: {
+          options: {
+            form: {
+              labelPosition: 'right',
+              size: 'mini',
+              labelWidth: '125px',
+              hideRequiredAsterisk: false,
+              showMessage: true,
+              inlineMessage: false,
+            },
+            submitBtn: true,
+            resetBtn: true,
+          },
+          rule: [
+            {
+              type: 'input',
+              field: 'Fgl35zs712gen',
+              title: '输入框',
+              info: '',
+              _fc_drag_tag: 'input',
+              hidden: false,
+              display: true,
+            },
+            {
+              type: 'inputNumber',
+              field: 'F7ap5zs712ub0',
+              title: '计数器',
+              info: '',
+              _fc_drag_tag: 'inputNumber',
+              hidden: false,
+              display: true,
+            },
+            {
+              type: 'radio',
+              field: 'Fmpd5zs7137v5',
+              title: '单选框',
+              info: '',
+              effect: {
+                fetch: '',
+              },
+              options: [
+                {
+                  value: '1',
+                  label: '选项1',
+                },
+                {
+                  value: '2',
+                  label: '选项2',
+                },
+              ],
+              _fc_drag_tag: 'radio',
+              hidden: false,
+              display: true,
+            },
+          ],
+        },
+        displayName: '触发器0',
+        disabled: false,
+        value: {},
+        id: 'common-21657bad7c00400a8c829ff044e3ca30',
+        x: 5165,
+        y: 5045,
+      },
+      {
+        type: 'common',
+        nodeName: '动作2',
+        icon: 'House',
+        inputs: ['input1'],
+        outputs: ['output1'],
+        formalParameter: ['key', 'name'],
+        flowType: 'action',
+        parameters: {
+          options: {
+            form: {
+              labelPosition: 'right',
+              size: 'mini',
+              labelWidth: '125px',
+              hideRequiredAsterisk: false,
+              showMessage: true,
+              inlineMessage: false,
+            },
+            submitBtn: true,
+            resetBtn: true,
+          },
+          rule: [
+            {
+              type: 'input',
+              field: 'Fgl35zs712gen',
+              title: '输入框',
+              info: '',
+              _fc_drag_tag: 'input',
+              hidden: false,
+              display: true,
+            },
+            {
+              type: 'inputNumber',
+              field: 'F7ap5zs712ub0',
+              title: '计数器',
+              info: '',
+              _fc_drag_tag: 'inputNumber',
+              hidden: false,
+              display: true,
+            },
+            {
+              type: 'radio',
+              field: 'Fmpd5zs7137v5',
+              title: '单选框',
+              info: '',
+              effect: {
+                fetch: '',
+              },
+              options: [
+                {
+                  value: '1',
+                  label: '选项1',
+                },
+                {
+                  value: '2',
+                  label: '选项2',
+                },
+              ],
+              _fc_drag_tag: 'radio',
+              hidden: false,
+              display: true,
+            },
+          ],
+        },
+        displayName: '动作2',
+        disabled: false,
+        value: {},
+        id: 'common-d0947d7784674bb19d33c59d8368b59e',
+        x: 5310,
+        y: 5310,
+      },
+      {
+        type: 'common',
+        nodeName: '逻辑判断',
+        icon: 'House',
+        inputs: ['input1'],
+        outputs: ['true', 'false'],
+        formalParameter: ['key', 'name'],
+        flowType: 'action',
+        parameters: {
+          options: {
+            form: {
+              labelPosition: 'right',
+              size: 'mini',
+              labelWidth: '125px',
+              hideRequiredAsterisk: false,
+              showMessage: true,
+              inlineMessage: false,
+            },
+            submitBtn: true,
+            resetBtn: true,
+          },
+          rule: [
+            {
+              type: 'input',
+              field: 'Fgl35zs712gen',
+              title: '输入框',
+              info: '',
+              _fc_drag_tag: 'input',
+              hidden: false,
+              display: true,
+            },
+            {
+              type: 'inputNumber',
+              field: 'F7ap5zs712ub0',
+              title: '计数器',
+              info: '',
+              _fc_drag_tag: 'inputNumber',
+              hidden: false,
+              display: true,
+            },
+            {
+              type: 'radio',
+              field: 'Fmpd5zs7137v5',
+              title: '单选框',
+              info: '',
+              effect: {
+                fetch: '',
+              },
+              options: [
+                {
+                  value: '1',
+                  label: '选项1',
+                },
+                {
+                  value: '2',
+                  label: '选项2',
+                },
+              ],
+              _fc_drag_tag: 'radio',
+              hidden: false,
+              display: true,
+            },
+          ],
+        },
+        displayName: '逻辑判断',
+        disabled: false,
+        value: {},
+        id: 'common-c56770095aee4e0581d321230428866d',
+        x: 5325,
+        y: 5055,
+      },
+      {
+        type: 'common',
+        nodeName: '动作2',
+        icon: 'House',
+        inputs: ['input1'],
+        outputs: ['output1'],
+        formalParameter: ['key', 'name'],
+        flowType: 'action',
+        parameters: {
+          options: {
+            form: {
+              labelPosition: 'right',
+              size: 'mini',
+              labelWidth: '125px',
+              hideRequiredAsterisk: false,
+              showMessage: true,
+              inlineMessage: false,
+            },
+            submitBtn: true,
+            resetBtn: true,
+          },
+          rule: [
+            {
+              type: 'input',
+              field: 'Fgl35zs712gen',
+              title: '输入框',
+              info: '',
+              _fc_drag_tag: 'input',
+              hidden: false,
+              display: true,
+            },
+            {
+              type: 'inputNumber',
+              field: 'F7ap5zs712ub0',
+              title: '计数器',
+              info: '',
+              _fc_drag_tag: 'inputNumber',
+              hidden: false,
+              display: true,
+            },
+            {
+              type: 'radio',
+              field: 'Fmpd5zs7137v5',
+              title: '单选框',
+              info: '',
+              effect: {
+                fetch: '',
+              },
+              options: [
+                {
+                  value: '1',
+                  label: '选项1',
+                },
+                {
+                  value: '2',
+                  label: '选项2',
+                },
+              ],
+              _fc_drag_tag: 'radio',
+              hidden: false,
+              display: true,
+            },
+          ],
+        },
+        displayName: '动作2',
+        disabled: false,
+        value: {},
+        id: 'common-74f27436a41f44bcb09eaf57a6019149',
+        x: 5625,
+        y: 5010,
+      },
+    ],
+    linkList: [
+      {
+        type: 'link',
+        id: 'link-e4c707a8f79841078b80d56571daa141',
+        sourceId: 'common-21657bad7c00400a8c829ff044e3ca30',
+        targetId: 'common-c56770095aee4e0581d321230428866d',
+        sourceEndpoint: 'output1',
+        targetEndpoint: 'input1',
+        label: '',
+      },
+      {
+        type: 'link',
+        id: 'link-be8141e936524832808c27f50541ec3f',
+        sourceId: 'common-c56770095aee4e0581d321230428866d',
+        targetId: 'common-d0947d7784674bb19d33c59d8368b59e',
+        sourceEndpoint: 'false',
+        targetEndpoint: 'input1',
+        label: '',
+      },
+      {
+        type: 'link',
+        id: 'link-a40591025b51400e969b63cade1b56ca',
+        sourceId: 'common-c56770095aee4e0581d321230428866d',
+        targetId: 'common-74f27436a41f44bcb09eaf57a6019149',
+        sourceEndpoint: 'true',
+        targetEndpoint: 'input1',
+        label: '',
+      },
+      {
+        type: 'link',
+        id: 'link-fe067fca5b084ea7866c9bb3c87a91df',
+        sourceId: 'common-d0947d7784674bb19d33c59d8368b59e',
+        targetId: 'common-74f27436a41f44bcb09eaf57a6019149',
+        sourceEndpoint: 'output1',
+        targetEndpoint: 'input1',
+        label: '',
+      },
+    ],
     attr: {
-      id: '',
+      id: 'flow-cfb0b971eb4845018c8a59fccf2fa51f',
     },
     config: {
       showGrid: true,
       showGridText: '隐藏网格',
     },
-    status: FlowStatusEnum.CREATE,
+    status: '3',
   });
 
   // 当前选择节点
@@ -240,7 +572,7 @@
     let nodeList = flowData.nodeList;
 
     if (nodeList.length <= 0) {
-      message.error('流程图中无任何节点！');
+      console.error('流程图中无任何节点！');
       return false;
     }
     return true;
@@ -252,15 +584,16 @@
 
     if (!checkFlow()) return;
     flowObj.status = FlowStatusEnum.SAVE;
-    message.success('保存流程成功！请查看控制台。');
-    console.log(flowObj);
+    console.log('保存流程成功！请查看控制台。');
   }
 
   // 拖拽节点进入画布
   function setDragInfo(info: IElement) {
     dragInfo.value = setDefault(info);
+    event.dataTransfer.setData('dragInfo', JSON.stringify(dragInfo.value));
   }
 
+  // 设置初始设置
   function setDefault(info: IElement) {
     return {
       ...info,
@@ -310,12 +643,7 @@
 
   // TODO 清除画布
   function clear() {
-    // flowData.nodeList.forEach((node: INode) => {
-    //   unref(plumb).remove(node.id);
-    // });
-    // clearSelect();
-    // flowData.nodeList = [];
-    // flowData.linkList = [];
+    flowAreaRef.value.clear();
   }
 
   // 清除当前选择节点
@@ -361,19 +689,10 @@
     console.log(formData);
   }
 
-  // 初始画布设置
-  function initSettingConfig() {
-    if (!ls.get('settingConfig')) {
-      ls.set('settingConfig', settingConfig);
-    } else {
-      flowConfig.value = setFlowConfig(unref(flowConfig), ls.get('settingConfig'));
-    }
+  function handle() {
+    console.log(flowAreaRef.value.getPreNodes('common-74f27436a41f44bcb09eaf57a6019149'));
   }
-
   onMounted(() => {
-    // // 实例化JsPlumb
-    // initJsPlumb();
-
     // 初始化快捷键
     // listenShortcutKey(unref(flowAreaRef), {
     //   selectTool,
@@ -383,7 +702,7 @@
     // });
 
     // 初始画布设置
-    initSettingConfig();
+    // initSettingConfig();
 
     // 初始化流程图
     initFlow();

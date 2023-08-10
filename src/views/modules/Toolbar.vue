@@ -1,7 +1,7 @@
 <template>
   <el-header class="header-option">
     <div>
-      <el-switch :value="readOnly" @change="(v) => emits('update:readOnly', v)"/>
+      <el-switch :value="readOnly" @change="(v) => emits('update:readOnly', v)" />
       只读
     </div>
     <div class="header-option__buttons">
@@ -20,9 +20,8 @@
 
 <script lang="ts" setup>
   import { PropType } from 'vue';
-  import { ITool } from '/@/type/index';
-  import { ToolsTypeEnum } from '/@/type/enums';
-  import { tools } from '/@/config/tools';
+  import { ITool } from '@/type/index';
+  import { ToolsTypeEnum } from '@/type/enums';
 
   defineProps({
     currentTool: {

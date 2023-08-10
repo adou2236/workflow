@@ -1,25 +1,29 @@
 <template>
   <div
     :id="node.id"
-    class="node-box common-rectangle-node"
-    :class="{
-      disabled,
-      active: isActive(),
-      isStart: node.type === CommonNodeTypeEnum.START,
-      isEnd: node.type === CommonNodeTypeEnum.END,
-    }"
+    class="node-box"
+    :class="[
+      {
+        disabled: node.disabled,
+        active: isActive(),
+      },
+      node.flowType,
+    ]"
     :style="{
       top: node.y + 'px',
       left: node.x + 'px',
       cursor: 'move',
     }"
     @click.stop="selectNode"
-    @contextmenu.stop="showNodeContextMenu"
+    @contextmenu.stop="showNodeContextMenu(node)"
   >
     <div class="node-tools">
       <el-icon @click="handleDisable(node)">
         <VideoPlay v-if="node.disabled" />
         <VideoPause v-else />
+      </el-icon>
+      <el-icon @click="handleDelete(node)">
+        <Delete />
       </el-icon>
     </div>
     <div class="node-setting">
@@ -40,10 +44,9 @@
 </template>
 
 <script lang="ts" setup>
-import {ref, unref, watch, onMounted, PropType, reactive, provide} from 'vue';
-  import { Resizable } from 'resizable-dom';
-  import { CommonNodeTypeEnum, LaneNodeTypeEnum, ToolsTypeEnum } from '@/type/enums';
-  import { INode, ILink, ITool, NodesType } from '@/type/index';
+  import { ref, unref, watch, onMounted, PropType, reactive, nextTick } from 'vue';
+  import { ToolsTypeEnum } from '@/type/enums';
+  import { INode, ILink, NodesType } from '@/type';
   import { VideoPlay } from '@element-plus/icons-vue';
 
   const props = defineProps({
@@ -65,7 +68,7 @@ import {ref, unref, watch, onMounted, PropType, reactive, provide} from 'vue';
     },
     plumb: {
       type: Object,
-      default: () => ({}),
+      default: () => undefined,
     },
   });
 
@@ -75,6 +78,7 @@ import {ref, unref, watch, onMounted, PropType, reactive, provide} from 'vue';
     'alignForLine',
     'updateNodePos',
     'updateNodeDisable',
+    'nodeDelete',
     'setNodeParams',
     'hideAlignLine',
     'isMultiple',
@@ -113,7 +117,7 @@ import {ref, unref, watch, onMounted, PropType, reactive, provide} from 'vue';
 
   // 初始节点拖拽
   function registerNode() {
-    props?.plumb?.draggable(currentNode.id, {
+    props.plumb!.draggable(currentNode.id, {
       containment: 'parent',
       handle: (e, el: HTMLElement) => {
         // 判断节点类型
@@ -145,28 +149,6 @@ import {ref, unref, watch, onMounted, PropType, reactive, provide} from 'vue';
       },
     });
 
-    if (
-      currentNode.type === LaneNodeTypeEnum.X_LANE ||
-      currentNode.type === LaneNodeTypeEnum.Y_LANE
-    ) {
-      let node = document.querySelector('#' + currentNode.id) as HTMLElement;
-      new Resizable(
-        node,
-        {
-          handles: ['e', 'w', 'n', 's', 'nw', 'ne', 'sw', 'se'],
-          initSize: {
-            maxWidth: 1000,
-            maxHeight: 1000,
-            minWidth: 200,
-            minHeight: 200,
-          },
-        },
-        () => {
-          currentNode.height = Math.ceil(parseInt(node.style.height));
-          currentNode.width = Math.ceil(parseInt(node.style.width));
-        },
-      );
-    }
     currentSelect.value = currentNode;
     currentSelectGroup.value = [];
   }
@@ -180,15 +162,15 @@ import {ref, unref, watch, onMounted, PropType, reactive, provide} from 'vue';
       } else {
         let f = unref(currentSelectGroup).find((s) => s.id === currentNode.id);
         if (f) {
-          props.plumb.addToDragSelection(currentNode.id);
+          props.plumb!.addToDragSelection(currentNode.id);
           currentSelectGroup.value.push(currentNode);
         }
       }
     });
   }
   // 节点右键
-  function showNodeContextMenu(e: MouseEvent) {
-    emits('showNodeContextMenu', e);
+  function showNodeContextMenu(node) {
+    emits('showNodeContextMenu', event, node);
     selectNode();
   }
   // 节点是否激活
@@ -203,6 +185,11 @@ import {ref, unref, watch, onMounted, PropType, reactive, provide} from 'vue';
   // 禁用节点
   function handleDisable(node) {
     emits('updateNodeDisable', node);
+  }
+
+  // 删除节点
+  function handleDelete(node) {
+    emits('nodeDelete', node);
   }
 
   // 设置节点内属性
@@ -239,7 +226,19 @@ import {ref, unref, watch, onMounted, PropType, reactive, provide} from 'vue';
     },
   );
 
-  onMounted(() => {
-    registerNode();
-  });
+  watch(
+    () => props.plumb,
+    (v) => {
+      if (v) {
+        nextTick(() => {
+          registerNode();
+        });
+      }
+    },
+    {
+      immediate: true,
+    },
+  );
+
+  onMounted(() => {});
 </script>

@@ -22,7 +22,6 @@
     "types": ["vite/client"],
     "removeComments": true,
     "paths": {
-      "/@/*": ["./src/*"],
       "@/*": ["./src/*"]
     }
   },

@@ -8,6 +8,7 @@ export interface ContextMenuItem {
   icon?: string;
   hidden?: boolean;
   disabled?: boolean;
+  params?: { [key: string]: any };
   handler?: Fn;
   divider?: boolean;
   children?: ContextMenuItem[];

@@ -10,12 +10,8 @@ export enum NodeTypeEnum {
 }
 
 export enum CommonNodeTypeEnum {
-  START = 'start',
   COMMON = 'common',
-  FREEDOM = 'freedom',
-  GATEWAY = 'gateway',
-  EVENT = 'event',
-  END = 'end',
+  NOTE = 'note',
 }
 
 export enum HighNodeTypeEnum {
@@ -41,4 +37,10 @@ export enum IdTypeEnum {
   SEQUENCE = 'sequence',
   TIME_STAMP_AND_SEQUENCE = 'time_stamp_and_sequence',
   CUSTOM = 'custom',
+}
+
+// 节点在工作流中的角色
+export enum FLOW_TYPE {
+  TRIGGER = 'trigger',
+  ACTION = 'action',
 }

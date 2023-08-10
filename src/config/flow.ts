@@ -1,5 +1,5 @@
 import { Defaults } from 'jsplumb';
-import { IdTypeEnum } from '/@/type/enums';
+import { IdTypeEnum } from '@/type/enums';
 
 export const settingConfig = {
   containerScale: {
@@ -50,7 +50,6 @@ const jsPlumbInsConfig: Defaults = {
     fill: '#456',
     stroke: '#2a2929',
     strokeWidth: 1,
-    radius: 3,
   },
   EndpointHoverStyle: {
     fill: 'pink',
@@ -94,7 +93,7 @@ const jsPlumbConfig = {
 
 const defaultStyle = {
   dragOpacity: 0.7,
-  alignGridPX: [5, 5],
+  alignGridPX: [5, 5], // 最小步长
   alignSpacing: {
     horizontal: settingConfig.other.horizontal,
     vertical: settingConfig.other.vertical,

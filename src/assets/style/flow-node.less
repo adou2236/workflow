@@ -13,19 +13,27 @@
   width: 80px;
   line-height: 80px;
   text-align: center;
-  border: 1px solid #777;
+  border: 1px solid rgb(125, 131, 143);
   border-radius: 5px;
   background-color: @common-node-bg;
   white-space: nowrap;
   box-shadow: 2px 2px 5px #ddd;
-  &:hover {
-    background-color: @common-node-bg-hover;
-    z-index: 2;
-  }
+
 
   &.active {
     outline: 4px solid @common-node-active;
     outline-offset: 0;
+  }
+
+  &.trigger {
+    border-top-left-radius: 25%;
+    border-bottom-left-radius: 25%;
+  }
+
+  &.disabled{
+    border-color: rgb(219, 223, 231);
+    background: white;
+    box-shadow: none;
   }
 
   &.isStart {
@@ -59,9 +67,9 @@
   right: 5px;
   cursor: pointer;
   display: flex;
+  visibility: hidden;
   &:hover{
     color: @primary-color;
-
   }
 }
 .node-tools{
@@ -70,10 +78,12 @@
   left: 50%;
   transform: translateX(-50%);
   width: 100px;
-  display: flex;
   justify-content: center;
+  display: flex;
+  opacity: 0;
   & > i {
     cursor: pointer;
+    margin: 0 5px;
   }
 }
 .node-description {
@@ -110,3 +120,20 @@
     font-size: 0.8em;
   }
 }
+
+.flow-area__container:not(.readOnly) .node-box{
+  &:hover{
+    .node-tools{
+      opacity: 1;
+    }
+  }
+  &:not(.disabled):hover {
+    background-color: @common-node-bg-hover;
+    z-index: 2;
+    .node-setting{
+      visibility: visible;
+    }
+  }
+}
+
+

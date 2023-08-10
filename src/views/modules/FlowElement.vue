@@ -6,7 +6,7 @@
 
 <script lang="ts" setup>
   import FlowElementList from './FlowElementList.vue';
-  import { commonNodes } from '/@/config/nodes';
+  import { commonNodes } from '@/config/nodes';
   import { IElement } from '@/type/index';
 
   const emits = defineEmits(['setDragInfo']);

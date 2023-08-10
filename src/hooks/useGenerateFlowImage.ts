@@ -1,7 +1,7 @@
 import { reactive } from 'vue';
 import canvg from 'canvg';
 import html2canvas from 'html2canvas';
-import { utils } from '/@/utils/common';
+import { utils } from '@/utils/common';
 
 export function useGenerateFlowImage() {
   // 生成流程图片
@@ -52,7 +52,7 @@ export function useGenerateFlowImage() {
   }
 
   // 生成流程图片
-  function generateFlowImage(nodeList, photoBlankDistance, checkFlow) {
+  function generateFlowImage(nodeList, photoBlankDistance = 200, checkFlow) {
     if (!checkFlow()) return;
 
     const $Container = document.querySelector('#flowContainer');

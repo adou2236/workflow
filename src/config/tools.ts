@@ -1,5 +1,5 @@
-import { ToolsTypeEnum } from '/@/type/enums';
-import { ITool } from '/@/type/index';
+import { ToolsTypeEnum } from '@/type/enums';
+import { ITool } from '@/type/index';
 
 export const tools: ITool[] = [
   {
