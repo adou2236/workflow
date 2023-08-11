@@ -2,6 +2,10 @@
 @common-node-bg-hover: #f4f6fcb0;
 @common-node-active: rgba(85, 85, 85, 0.39);
 @primary-color: #FF6D5A;
+@success-color: #67c23a;
+@warning-color: #e6a23c;
+@info-color: #909399;
+@error-color: #f56c6c;
 
 
 .node-box {
@@ -13,7 +17,7 @@
   width: 80px;
   line-height: 80px;
   text-align: center;
-  border: 1px solid rgb(125, 131, 143);
+  border: 2px solid rgb(125, 131, 143);
   border-radius: 5px;
   background-color: @common-node-bg;
   white-space: nowrap;
@@ -35,6 +39,26 @@
     background: white;
     box-shadow: none;
   }
+
+  // TODO 改成scss
+  &[status=success] {
+    border-color: @success-color
+  }
+
+  &[status=error] {
+    border-color: @error-color
+  }
+
+  &[status=info] {
+    border-color: @info-color
+  }
+
+  &[status=warning] {
+    border-color: @warning-color;
+
+  }
+
+
 
   &.isStart {
   }
@@ -71,6 +95,13 @@
   &:hover{
     color: @primary-color;
   }
+}
+.node-notification {
+  position: absolute;
+  bottom: 5px;
+  right: 5px;
+  cursor: pointer;
+  display: flex;
 }
 .node-tools{
   position: absolute;

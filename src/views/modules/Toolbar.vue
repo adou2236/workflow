@@ -11,9 +11,7 @@
 
       <el-button size="small" @click="emits('clear')"> 清空 </el-button>
 
-      <el-button @click="emits('toggleShowGrid')" size="small">
-        {{ flowData.config.showGridText }}
-      </el-button>
+      <el-button @click="emits('toggleShowGrid')" size="small"> 网格 </el-button>
     </div>
   </el-header>
 </template>
@@ -24,10 +22,6 @@
   import { ToolsTypeEnum } from '@/type/enums';
 
   defineProps({
-    currentTool: {
-      type: Object as PropType<ITool>,
-      default: () => ({}),
-    },
     flowData: {
       type: Object,
       default: () => ({}),

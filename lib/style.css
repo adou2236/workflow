@@ -231,6 +231,13 @@
 .node-setting:hover {
   color: #FF6D5A;
 }
+.node-notification {
+  position: absolute;
+  bottom: 5px;
+  right: 5px;
+  cursor: pointer;
+  display: flex;
+}
 .node-tools {
   position: absolute;
   top: -25px;
@@ -241,6 +248,7 @@
   display: flex;
   opacity: 0;
 }
+
 .node-tools > i {
   cursor: pointer;
   margin: 0 5px;

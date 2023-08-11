@@ -4,9 +4,12 @@
 
 import { INode } from '@/type';
 import { unref } from 'vue';
+import { NOTIFICATION_STATUS } from '@/type/enums';
 
 /**
  * 获取某节点的前链节点
+ * @param nodeId
+ * @param rest
  */
 function getPreNodes(nodeId: string, rest: any): INode[] {
   const { flowData } = rest;
@@ -29,6 +32,7 @@ function install(global) {
   return {
     getPreNodes: (nodeId) => getPreNodes(nodeId, global),
     clear: () => clear(global),
+    setStatus: (id, status, message) => setStatus(id, status, message, global),
   };
 }
 
@@ -42,6 +46,18 @@ function clear(rest: any): void {
   });
   unref(flowData).nodeList = [];
   unref(flowData).linkList = [];
+}
+
+/**
+ *
+ * @param id 节点或连线id
+ * @param status 状态 enum
+ * @param message 提示信息
+ * @param rest
+ */
+function setStatus(id: string, status: NOTIFICATION_STATUS, message: string, rest: any) {
+  const { plumb } = rest;
+  unref(plumb).setAttributes(document.getElementById(id), { status, message });
 }
 
 export default install;

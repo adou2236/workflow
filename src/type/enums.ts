@@ -44,3 +44,11 @@ export enum FLOW_TYPE {
   TRIGGER = 'trigger',
   ACTION = 'action',
 }
+
+// 节点、连线状态
+export enum NOTIFICATION_STATUS {
+  INFO = 'info',
+  SUCCESS = 'success',
+  WARNING = 'warning',
+  ERROR = 'error',
+}

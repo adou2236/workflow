@@ -1,5 +1,5 @@
 import { PropType } from 'vue';
-import { INode, ILink, IElement } from '../../type';
+import { INode, ILink } from '../../type';
 declare function enlargeContainer(): void;
 declare function narrowContainer(): void;
 declare function deleteNode(nodes: INode[] | INode): void;
@@ -20,10 +20,6 @@ declare const _default: import("vue").DefineComponent<{
         type: PropType<INode[]>;
         default: () => never[];
     };
-    dragInfo: {
-        type: PropType<IElement>;
-        default: () => {};
-    };
     readOnly: {
         type: BooleanConstructor;
         default: boolean;
@@ -38,7 +34,7 @@ declare const _default: import("vue").DefineComponent<{
         };
         dragFlag: boolean;
         draging: boolean;
-        scale: any;
+        scale: number;
         scaleFlag: boolean;
         scaleOrigin: {
             x: number;
@@ -46,7 +42,7 @@ declare const _default: import("vue").DefineComponent<{
         };
         scaleShow: number;
         auxiliaryLine: {
-            isOpen: any;
+            isOpen: boolean;
             isShowXLine: boolean;
             isShowYLine: boolean;
             controlFnTimesFlag: boolean;
@@ -83,10 +79,6 @@ declare const _default: import("vue").DefineComponent<{
         type: PropType<INode[]>;
         default: () => never[];
     };
-    dragInfo: {
-        type: PropType<IElement>;
-        default: () => {};
-    };
     readOnly: {
         type: BooleanConstructor;
         default: boolean;
@@ -104,7 +96,6 @@ declare const _default: import("vue").DefineComponent<{
     selectGroup: INode[];
     config: Record<string, any>;
     data: Record<string, any>;
-    dragInfo: IElement;
     readOnly: boolean;
 }>;
 export default _default;

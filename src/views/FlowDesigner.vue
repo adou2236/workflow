@@ -1,13 +1,10 @@
 <template>
   <el-container class="flow-wrapper">
     <!-- 左侧边组件元素 -->
-    <el-drawer :model-value="true">
-      <flow-element @setDragInfo="setDragInfo" />
-    </el-drawer>
+    <flow-element @setDragInfo="setDragInfo" />
     <el-container class="is-vertical">
       <!-- 工具区 -->
       <Toolbar
-        :currentTool="currentTool"
         :flowData="flowData"
         v-model:readOnly="readOnly"
         @showData="showData"
@@ -29,7 +26,6 @@
       <el-main class="flow-content">
         <flow-area
           ref="flowAreaRef"
-          :config="flowConfig"
           :read-only="readOnly"
           v-model:data="flowData"
           v-model:select="currentSelect"
@@ -93,13 +89,11 @@
   import FlowElement from './modules/FlowElement.vue';
   import Toolbar from './modules/Toolbar.vue';
   import formCreate from '@form-create/element-ui';
-  import { tools } from '@/config/tools';
   import { INode, ILink, ITool, IElement } from '@/type';
   import { FlowStatusEnum } from '@/type/enums';
   import { utils } from '@/utils/common';
   import { useGenerateFlowImage } from '@/hooks/useGenerateFlowImage';
   import { useShortcutKey } from '@/hooks/useShortcutKey';
-  import { flowConfig as defaultFlowConfig } from '@/config/flow';
   import { JsonViewer } from 'vue3-json-viewer';
   import 'vue3-json-viewer/dist/index.css';
 
@@ -113,16 +107,13 @@
   const { listenShortcutKey, offShortcutKey, onShortcutKey } = useShortcutKey();
 
   // 流程配置
-  const flowConfig = ref(cloneDeep(defaultFlowConfig));
+  const flowConfig = ref({});
 
   // 流程实例
   const plumb = ref();
 
   // 只读
   const readOnly = ref(false);
-
-  // 当前工具类型
-  const currentTool = ref<ITool>(tools[0]);
 
   // 画布Ref
   const flowAreaRef = ref();
@@ -483,10 +474,6 @@
     attr: {
       id: 'flow-cfb0b971eb4845018c8a59fccf2fa51f',
     },
-    config: {
-      showGrid: true,
-      showGridText: '隐藏网格',
-    },
     status: '3',
   });
 
@@ -603,43 +590,43 @@
     };
   }
 
-  // TODO 键盘移动节点
-  function moveNode(type: string) {
-    let m = unref(flowConfig).defaultStyle.movePx,
-      isX = true;
-    switch (type) {
-      case 'left':
-        m = -m;
-        break;
-      case 'up':
-        m = -m;
-        isX = false;
-        break;
-      case 'right':
-        break;
-      case 'down':
-        isX = false;
-        break;
-    }
-
-    if (unref(currentSelectGroup).length > 0) {
-      unref(currentSelectGroup).forEach((node) => {
-        if (isX) {
-          node.x += m;
-        } else {
-          node.y += m;
-        }
-      });
-    } else if (unref(currentSelect)?.id) {
-      if (isX) {
-        (unref(currentSelect) as INode).x += m;
-      } else {
-        (unref(currentSelect) as INode).y += m;
-      }
-    }
-
-    unref(plumb).repaintEverything();
-  }
+  // // TODO 键盘移动节点
+  // function moveNode(type: string) {
+  //   let m = unref(flowConfig).defaultStyle.movePx,
+  //     isX = true;
+  //   switch (type) {
+  //     case 'left':
+  //       m = -m;
+  //       break;
+  //     case 'up':
+  //       m = -m;
+  //       isX = false;
+  //       break;
+  //     case 'right':
+  //       break;
+  //     case 'down':
+  //       isX = false;
+  //       break;
+  //   }
+  //
+  //   if (unref(currentSelectGroup).length > 0) {
+  //     unref(currentSelectGroup).forEach((node) => {
+  //       if (isX) {
+  //         node.x += m;
+  //       } else {
+  //         node.y += m;
+  //       }
+  //     });
+  //   } else if (unref(currentSelect)?.id) {
+  //     if (isX) {
+  //       (unref(currentSelect) as INode).x += m;
+  //     } else {
+  //       (unref(currentSelect) as INode).y += m;
+  //     }
+  //   }
+  //
+  //   unref(plumb).repaintEverything();
+  // }
 
   // TODO 清除画布
   function clear() {
@@ -653,11 +640,7 @@
   }
 
   // 显示隐藏网格
-  function toggleShowGrid() {
-    let flag = flowData.config.showGrid;
-    flowData.config.showGrid = !flag;
-    flowData.config.showGridText = flag ? '显示网格' : '隐藏网格';
-  }
+  function toggleShowGrid() {}
 
   function showData() {
     dialogVisible.value = true;
@@ -690,8 +673,9 @@
   }
 
   function handle() {
-    console.log(flowAreaRef.value.getPreNodes('common-74f27436a41f44bcb09eaf57a6019149'));
+    flowAreaRef.value.setStatus('common-74f27436a41f44bcb09eaf57a6019149', '', '');
   }
+
   onMounted(() => {
     // 初始化快捷键
     // listenShortcutKey(unref(flowAreaRef), {

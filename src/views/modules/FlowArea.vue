@@ -1,5 +1,5 @@
 <template>
-  <div class="flow-area" @dragover="handleDragover" @drop="handleDrop">
+  <div class="flow-area" @dragover="handleDragover" @drop.capture="handleDrop">
     <!--辅助线X-->
     <div
       v-if="container.auxiliaryLine.isOpen && container.auxiliaryLine.isShowXLine"
@@ -18,7 +18,7 @@
       id="flowContainer"
       class="flow-area__container"
       :class="{
-        grid: flowData.config.showGrid,
+        grid: flowConfig.defaultStyle.showGrid,
         canDrag: container.dragFlag,
         canMultiple: rectangleMultiple.flag,
         readOnly: props.readOnly,
@@ -37,7 +37,7 @@
         :key="node.id"
         :node="node"
         :plumb="plumb"
-        :config="config"
+        :config="flowConfig"
         v-model:select="currentSelect"
         v-model:selectGroup="currentSelectGroup"
         @showNodeContextMenu="showNodeContextMenu"
@@ -131,7 +131,7 @@
   const status = ref();
 
   // 流程配置
-  const flowConfig = reactive(props.config || defaultConfig);
+  const flowConfig = ref(defaultConfig);
 
   // 流程DSL数据
   const flowData = ref(props.data);
@@ -149,16 +149,16 @@
     },
     dragFlag: false,
     draging: false,
-    scale: flowConfig.defaultStyle.containerScale.init,
+    scale: flowConfig.value.defaultStyle.containerScale.init,
     scaleFlag: false,
     scaleOrigin: {
       x: 0,
       y: 0,
     },
-    scaleShow: utils.mul(flowConfig.defaultStyle.containerScale.init, 100),
+    scaleShow: utils.mul(flowConfig.value.defaultStyle.containerScale.init, 100),
     // 辅助线
     auxiliaryLine: {
-      isOpen: flowConfig.defaultStyle.isOpenAuxiliaryLine,
+      isOpen: flowConfig.value.defaultStyle.isOpenAuxiliaryLine,
       isShowXLine: false,
       isShowYLine: false,
       controlFnTimesFlag: true,
@@ -237,9 +237,6 @@
     // 复位拖拽工具
     let dragInfo = event.dataTransfer.getData('dragInfo');
     addNewNode(JSON.parse(dragInfo));
-    nextTick(() => {
-      emits('addNode');
-    });
   }
 
   // 画布鼠标移动
@@ -301,8 +298,8 @@
 
   // x, y取整计算
   function computeNodePos(x: number, y: number) {
-    const pxx = flowConfig.defaultStyle.alignGridPX[0];
-    const pxy = flowConfig.defaultStyle.alignGridPX[1];
+    const pxx = flowConfig.value.defaultStyle.alignGridPX[0];
+    const pxy = flowConfig.value.defaultStyle.alignGridPX[1];
     if (x % pxx) x = pxx - (x % pxx) + x;
     if (y % pxy) y = pxy - (y % pxy) + y;
     return {
@@ -332,6 +329,7 @@
     nextTick(() => {
       __addNode(plumb.value, newNode);
       emits('update:data', unref(flowData));
+      emits('addNode', newNode);
     });
   }
 
@@ -394,8 +392,11 @@
   function enlargeContainer() {
     container.scaleOrigin.x = mouse.position.x;
     container.scaleOrigin.y = mouse.position.y;
-    let newScale = utils.add(container.scale, flowConfig.defaultStyle.containerScale.onceEnlarge);
-    if (newScale <= flowConfig.defaultStyle.containerScale.max) {
+    let newScale = utils.add(
+      container.scale,
+      flowConfig.value.defaultStyle.containerScale.onceEnlarge,
+    );
+    if (newScale <= flowConfig.value.defaultStyle.containerScale.max) {
       container.scale = newScale;
       container.scaleShow = utils.mul(container.scale, 100);
       plumb.value.setZoom(container.scale);
@@ -406,8 +407,11 @@
   function narrowContainer() {
     container.scaleOrigin.x = mouse.position.x;
     container.scaleOrigin.y = mouse.position.y;
-    let newScale = utils.sub(container.scale, flowConfig.defaultStyle.containerScale.onceNarrow);
-    if (newScale >= flowConfig.defaultStyle.containerScale.min) {
+    let newScale = utils.sub(
+      container.scale,
+      flowConfig.value.defaultStyle.containerScale.onceNarrow,
+    );
+    if (newScale >= flowConfig.value.defaultStyle.containerScale.min) {
       container.scale = newScale;
       container.scaleShow = utils.mul(container.scale, 100);
       plumb.value.setZoom(container.scale);
@@ -606,7 +610,7 @@
       nodeList.forEach((node: INode) => {
         if (elId !== node.id) {
           let nodeDom = document.getElementById(node.id);
-          let dis = flowConfig.defaultStyle.showAuxiliaryLineDistance,
+          let dis = flowConfig.value.defaultStyle.showAuxiliaryLineDistance,
             elPos = e.pos,
             elH = e.el.offsetHeight,
             elW = e.el.offsetWidth,

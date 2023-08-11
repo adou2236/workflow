@@ -92,6 +92,7 @@ const jsPlumbConfig = {
 };
 
 const defaultStyle = {
+  showGrid: true,
   dragOpacity: 0.7,
   alignGridPX: [5, 5], // 最小步长
   alignSpacing: {

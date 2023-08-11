@@ -54,6 +54,7 @@ export declare const flowConfig: {
         };
     };
     defaultStyle: {
+        showGrid: boolean;
         dragOpacity: number;
         alignGridPX: number[];
         alignSpacing: {

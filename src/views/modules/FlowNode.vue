@@ -1,6 +1,7 @@
 <template>
   <div
     :id="node.id"
+    ref="nodeRef"
     class="node-box"
     :class="[
       {
@@ -26,6 +27,13 @@
         <Delete />
       </el-icon>
     </div>
+    <div class="node-notification" v-show="message">
+      <el-tooltip :content="message">
+        <el-icon :color="`var(--el-color-${status})`">
+          <component :is="IconMap[status]" />
+        </el-icon>
+      </el-tooltip>
+    </div>
     <div class="node-setting">
       <el-icon @click="setNodeParams(node)"><Tools /></el-icon>
     </div>
@@ -44,7 +52,17 @@
 </template>
 
 <script lang="ts" setup>
-  import { ref, unref, watch, onMounted, PropType, reactive, nextTick } from 'vue';
+  import {
+    ref,
+    unref,
+    watch,
+    onMounted,
+    PropType,
+    reactive,
+    nextTick,
+    onUpdated,
+    onBeforeUnmount,
+  } from 'vue';
   import { ToolsTypeEnum } from '@/type/enums';
   import { INode, ILink, NodesType } from '@/type';
   import { VideoPlay } from '@element-plus/icons-vue';
@@ -96,6 +114,19 @@
 
   // 当前选择的节点组
   const currentSelectGroup = ref(props.selectGroup);
+
+  const nodeRef = ref();
+
+  const message = ref('');
+
+  const status = ref('');
+
+  const IconMap = ref({
+    info: 'InfoFilled',
+    success: 'SuccessFilled',
+    warning: 'WarnTriangleFilled',
+    error: 'CircleCloseFilled',
+  });
 
   // 设置ICON
   function setIcon(type: NodesType) {
@@ -239,6 +270,27 @@
       immediate: true,
     },
   );
+  let observer = ref<MutationObserver | null>(null);
 
-  onMounted(() => {});
+  function setAttrs(records) {
+    records.map((record) => {
+      if (record.attributeName === 'status') {
+        status.value = nodeRef.value.getAttribute('status');
+      }
+      if (record.attributeName === 'message') {
+        message.value = nodeRef.value.getAttribute('message');
+      }
+    });
+  }
+  //执行观察
+  onMounted(() => {
+    if (window.MutationObserver || window.WebKitMutationObserver || window.MozMutationObserver) {
+      observer.value = new MutationObserver(setAttrs);
+    }
+    observer.value?.observe(nodeRef.value, { attributes: true });
+  });
+
+  onBeforeUnmount(() => {
+    observer.value?.disconnect();
+  });
 </script>
