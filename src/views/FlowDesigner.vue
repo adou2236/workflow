@@ -112,7 +112,7 @@
   const plumb = ref();
 
   // 只读
-  const readOnly = ref(false);
+  const readOnly = ref(true);
 
   // 画布Ref
   const flowAreaRef = ref();

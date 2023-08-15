@@ -127,6 +127,8 @@
   // 流程实例
   const plumb = ref();
 
+  const initDone = ref(false);
+
   // 流程当前状态
   const status = ref('3');
 
@@ -722,10 +724,9 @@
     });
   }
 
-  function linkEvent() {}
-
   // 数据初始化
   function dataInit() {
+    if (!unref(plumb)) return;
     status.value = FlowStatusEnum.LOADING;
     try {
       if (flowData.value.nodeList && flowData.value.nodeList.length > 0) {
@@ -744,18 +745,22 @@
         });
       }
     } catch (e) {
-      console.error('渲染失败');
+      console.error('渲染失败', e);
     }
     status.value = FlowStatusEnum.MODIFY;
+    setTimeout(() => {
+      setReadOnly(props.readOnly);
+    });
   }
 
   function setReadOnly(flag: boolean) {
+    if (!unref(plumb)) return;
     unref(plumb).setSuspendDrawing(flag);
     const connections = unref(plumb).getAllConnections();
     connections.forEach((connection) => {
       connection.setDetachable(!flag);
     });
-    const nodes = unref(flowData).nodeList;
+    const nodes = unref(flowData).nodeList || [];
     nodes.forEach((node) => {
       unref(plumb).setDraggable(document.getElementById(node.id), !flag);
     });
@@ -826,7 +831,6 @@
 
   onMounted(() => {
     initJsPlumb();
-    zoomFit();
   });
 
   defineExpose({

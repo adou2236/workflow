@@ -230,6 +230,7 @@
 .node-icon {
   width: 60%;
   height: 60%;
+  pointer-events: none;
 }
 .node-setting {
   position: absolute;
@@ -294,8 +295,12 @@
   color: #000;
   font-size: 0.8em;
 }
+.flow-area__container.readOnly .node-box .node-tools {
+  display: none;
+}
 .flow-area__container:not(.readOnly) .node-box:hover .node-tools {
   opacity: 1;
+  pointer-events: auto;
 }
 .flow-area__container:not(.readOnly) .node-box:not(.disabled):hover {
   background-color: #f4f6fcb0;

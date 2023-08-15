@@ -217,7 +217,6 @@ const getContentDimensions = (): { editorWidth: number; editorHeight: number } =
   const nodeViewRoot = document.getElementById('flow-area-root');
 
   if (nodeViewRoot) {
-    console.log('???');
     const contentBounds = nodeViewRoot.getBoundingClientRect();
     contentWidth = contentBounds.width;
     contentHeight = contentBounds.height;

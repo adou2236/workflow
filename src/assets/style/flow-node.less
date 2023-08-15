@@ -84,6 +84,7 @@
 .node-icon{
   width: 60%;
   height: 60%;
+  pointer-events: none;
 }
 .node-setting{
   position: absolute;
@@ -152,10 +153,16 @@
   }
 }
 
+.flow-area__container.readOnly .node-box{
+  .node-tools{
+    display: none;
+  }
+}
 .flow-area__container:not(.readOnly) .node-box{
   &:hover{
     .node-tools{
       opacity: 1;
+      pointer-events: auto;
     }
   }
   &:not(.disabled):hover {
