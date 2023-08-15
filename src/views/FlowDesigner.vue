@@ -56,21 +56,21 @@
     <json-viewer :value="flowData" :expand-depth="3" boxed copyable v-if="dialogVisible" />
   </el-dialog>
 
-  <!-- 生成流程图片 -->
-  <el-dialog
-    :title="'流程设计图_' + flowData.attr.id + '.png'"
-    centered
-    width="90%"
-    :closable="false"
-    :maskClosable="false"
-    v-model="flowImage.modalVisible"
-    okText="下载到本地"
-    cancelText="取消"
-    @ok="downLoadFlowImage(flowData.attr.id)"
-    @cancel="cancelDownLoadFlowImage"
-  >
-    <img :src="flowImage.url" style="width: 100%" />
-  </el-dialog>
+  <!--  &lt;!&ndash; 生成流程图片 &ndash;&gt;-->
+  <!--  <el-dialog-->
+  <!--    :title="'流程设计图_' + flowData.attr.id + '.png'"-->
+  <!--    centered-->
+  <!--    width="90%"-->
+  <!--    :closable="false"-->
+  <!--    :maskClosable="false"-->
+  <!--    v-model="flowImage.modalVisible"-->
+  <!--    okText="下载到本地"-->
+  <!--    cancelText="取消"-->
+  <!--    @ok="downLoadFlowImage(flowData.attr.id)"-->
+  <!--    @cancel="cancelDownLoadFlowImage"-->
+  <!--  >-->
+  <!--    <img :src="flowImage.url" style="width: 100%" />-->
+  <!--  </el-dialog>-->
 
   <!-- 设置 -->
   <!--  <SettingModal v-model:settingVisible="settingVisible" v-model:config="flowConfig" />-->
@@ -145,336 +145,7 @@
   //   },
   //   status: FlowStatusEnum.CREATE,
   // });
-  const flowData = reactive<Recordable>({
-    nodeList: [
-      {
-        type: 'common',
-        nodeName: '触发器0',
-        icon: 'Bell',
-        inputs: [],
-        outputs: ['output1'],
-        formalParameter: ['key', 'name'],
-        flowType: 'trigger',
-        parameters: {
-          options: {
-            form: {
-              labelPosition: 'right',
-              size: 'mini',
-              labelWidth: '125px',
-              hideRequiredAsterisk: false,
-              showMessage: true,
-              inlineMessage: false,
-            },
-            submitBtn: true,
-            resetBtn: true,
-          },
-          rule: [
-            {
-              type: 'input',
-              field: 'Fgl35zs712gen',
-              title: '输入框',
-              info: '',
-              _fc_drag_tag: 'input',
-              hidden: false,
-              display: true,
-            },
-            {
-              type: 'inputNumber',
-              field: 'F7ap5zs712ub0',
-              title: '计数器',
-              info: '',
-              _fc_drag_tag: 'inputNumber',
-              hidden: false,
-              display: true,
-            },
-            {
-              type: 'radio',
-              field: 'Fmpd5zs7137v5',
-              title: '单选框',
-              info: '',
-              effect: {
-                fetch: '',
-              },
-              options: [
-                {
-                  value: '1',
-                  label: '选项1',
-                },
-                {
-                  value: '2',
-                  label: '选项2',
-                },
-              ],
-              _fc_drag_tag: 'radio',
-              hidden: false,
-              display: true,
-            },
-          ],
-        },
-        displayName: '触发器0',
-        disabled: false,
-        value: {},
-        id: 'common-21657bad7c00400a8c829ff044e3ca30',
-        x: 5165,
-        y: 5045,
-      },
-      {
-        type: 'common',
-        nodeName: '动作2',
-        icon: 'House',
-        inputs: ['input1'],
-        outputs: ['output1'],
-        formalParameter: ['key', 'name'],
-        flowType: 'action',
-        parameters: {
-          options: {
-            form: {
-              labelPosition: 'right',
-              size: 'mini',
-              labelWidth: '125px',
-              hideRequiredAsterisk: false,
-              showMessage: true,
-              inlineMessage: false,
-            },
-            submitBtn: true,
-            resetBtn: true,
-          },
-          rule: [
-            {
-              type: 'input',
-              field: 'Fgl35zs712gen',
-              title: '输入框',
-              info: '',
-              _fc_drag_tag: 'input',
-              hidden: false,
-              display: true,
-            },
-            {
-              type: 'inputNumber',
-              field: 'F7ap5zs712ub0',
-              title: '计数器',
-              info: '',
-              _fc_drag_tag: 'inputNumber',
-              hidden: false,
-              display: true,
-            },
-            {
-              type: 'radio',
-              field: 'Fmpd5zs7137v5',
-              title: '单选框',
-              info: '',
-              effect: {
-                fetch: '',
-              },
-              options: [
-                {
-                  value: '1',
-                  label: '选项1',
-                },
-                {
-                  value: '2',
-                  label: '选项2',
-                },
-              ],
-              _fc_drag_tag: 'radio',
-              hidden: false,
-              display: true,
-            },
-          ],
-        },
-        displayName: '动作2',
-        disabled: false,
-        value: {},
-        id: 'common-d0947d7784674bb19d33c59d8368b59e',
-        x: 5310,
-        y: 5310,
-      },
-      {
-        type: 'common',
-        nodeName: '逻辑判断',
-        icon: 'House',
-        inputs: ['input1'],
-        outputs: ['true', 'false'],
-        formalParameter: ['key', 'name'],
-        flowType: 'action',
-        parameters: {
-          options: {
-            form: {
-              labelPosition: 'right',
-              size: 'mini',
-              labelWidth: '125px',
-              hideRequiredAsterisk: false,
-              showMessage: true,
-              inlineMessage: false,
-            },
-            submitBtn: true,
-            resetBtn: true,
-          },
-          rule: [
-            {
-              type: 'input',
-              field: 'Fgl35zs712gen',
-              title: '输入框',
-              info: '',
-              _fc_drag_tag: 'input',
-              hidden: false,
-              display: true,
-            },
-            {
-              type: 'inputNumber',
-              field: 'F7ap5zs712ub0',
-              title: '计数器',
-              info: '',
-              _fc_drag_tag: 'inputNumber',
-              hidden: false,
-              display: true,
-            },
-            {
-              type: 'radio',
-              field: 'Fmpd5zs7137v5',
-              title: '单选框',
-              info: '',
-              effect: {
-                fetch: '',
-              },
-              options: [
-                {
-                  value: '1',
-                  label: '选项1',
-                },
-                {
-                  value: '2',
-                  label: '选项2',
-                },
-              ],
-              _fc_drag_tag: 'radio',
-              hidden: false,
-              display: true,
-            },
-          ],
-        },
-        displayName: '逻辑判断',
-        disabled: false,
-        value: {},
-        id: 'common-c56770095aee4e0581d321230428866d',
-        x: 5325,
-        y: 5055,
-      },
-      {
-        type: 'common',
-        nodeName: '动作2',
-        icon: 'House',
-        inputs: ['input1'],
-        outputs: ['output1'],
-        formalParameter: ['key', 'name'],
-        flowType: 'action',
-        parameters: {
-          options: {
-            form: {
-              labelPosition: 'right',
-              size: 'mini',
-              labelWidth: '125px',
-              hideRequiredAsterisk: false,
-              showMessage: true,
-              inlineMessage: false,
-            },
-            submitBtn: true,
-            resetBtn: true,
-          },
-          rule: [
-            {
-              type: 'input',
-              field: 'Fgl35zs712gen',
-              title: '输入框',
-              info: '',
-              _fc_drag_tag: 'input',
-              hidden: false,
-              display: true,
-            },
-            {
-              type: 'inputNumber',
-              field: 'F7ap5zs712ub0',
-              title: '计数器',
-              info: '',
-              _fc_drag_tag: 'inputNumber',
-              hidden: false,
-              display: true,
-            },
-            {
-              type: 'radio',
-              field: 'Fmpd5zs7137v5',
-              title: '单选框',
-              info: '',
-              effect: {
-                fetch: '',
-              },
-              options: [
-                {
-                  value: '1',
-                  label: '选项1',
-                },
-                {
-                  value: '2',
-                  label: '选项2',
-                },
-              ],
-              _fc_drag_tag: 'radio',
-              hidden: false,
-              display: true,
-            },
-          ],
-        },
-        displayName: '动作2',
-        disabled: false,
-        value: {},
-        id: 'common-74f27436a41f44bcb09eaf57a6019149',
-        x: 5625,
-        y: 5010,
-      },
-    ],
-    linkList: [
-      {
-        type: 'link',
-        id: 'link-e4c707a8f79841078b80d56571daa141',
-        sourceId: 'common-21657bad7c00400a8c829ff044e3ca30',
-        targetId: 'common-c56770095aee4e0581d321230428866d',
-        sourceEndpoint: 'output1',
-        targetEndpoint: 'input1',
-        label: '',
-      },
-      {
-        type: 'link',
-        id: 'link-be8141e936524832808c27f50541ec3f',
-        sourceId: 'common-c56770095aee4e0581d321230428866d',
-        targetId: 'common-d0947d7784674bb19d33c59d8368b59e',
-        sourceEndpoint: 'false',
-        targetEndpoint: 'input1',
-        label: '',
-      },
-      {
-        type: 'link',
-        id: 'link-a40591025b51400e969b63cade1b56ca',
-        sourceId: 'common-c56770095aee4e0581d321230428866d',
-        targetId: 'common-74f27436a41f44bcb09eaf57a6019149',
-        sourceEndpoint: 'true',
-        targetEndpoint: 'input1',
-        label: '',
-      },
-      {
-        type: 'link',
-        id: 'link-fe067fca5b084ea7866c9bb3c87a91df',
-        sourceId: 'common-d0947d7784674bb19d33c59d8368b59e',
-        targetId: 'common-74f27436a41f44bcb09eaf57a6019149',
-        sourceEndpoint: 'output1',
-        targetEndpoint: 'input1',
-        label: '',
-      },
-    ],
-    attr: {
-      id: 'flow-cfb0b971eb4845018c8a59fccf2fa51f',
-    },
-    status: '3',
-  });
+  const flowData = ref<Recordable>();
 
   // 当前选择节点
   const currentSelect = ref<INode | ILink>();
@@ -487,8 +158,8 @@
 
   // 初始化流程图
   function initFlow() {
-    if (flowData.status === FlowStatusEnum.CREATE) {
-      flowData.attr.id = 'flow-' + utils.getId();
+    if (flowData.value.status === FlowStatusEnum.CREATE) {
+      flowData.value.attr.id = 'flow-' + utils.getId();
     } else {
       loadFlow();
     }
@@ -555,7 +226,7 @@
 
   // 检测流程数据有效性
   function checkFlow() {
-    let nodeList = flowData.nodeList;
+    let nodeList = flowData.value.nodeList;
 
     if (nodeList.length <= 0) {
       console.error('流程图中无任何节点！');
@@ -688,6 +359,338 @@
     // initSettingConfig();
 
     // 初始化流程图
-    initFlow();
+    // initFlow();
+    nextTick(() => {
+      flowData.value = {
+        nodeList: [
+          {
+            type: 'common',
+            nodeName: '触发器0',
+            icon: 'Bell',
+            inputs: [],
+            outputs: ['output1'],
+            formalParameter: ['key', 'name'],
+            flowType: 'trigger',
+            parameters: {
+              options: {
+                form: {
+                  labelPosition: 'right',
+                  size: 'mini',
+                  labelWidth: '125px',
+                  hideRequiredAsterisk: false,
+                  showMessage: true,
+                  inlineMessage: false,
+                },
+                submitBtn: true,
+                resetBtn: true,
+              },
+              rule: [
+                {
+                  type: 'input',
+                  field: 'Fgl35zs712gen',
+                  title: '输入框',
+                  info: '',
+                  _fc_drag_tag: 'input',
+                  hidden: false,
+                  display: true,
+                },
+                {
+                  type: 'inputNumber',
+                  field: 'F7ap5zs712ub0',
+                  title: '计数器',
+                  info: '',
+                  _fc_drag_tag: 'inputNumber',
+                  hidden: false,
+                  display: true,
+                },
+                {
+                  type: 'radio',
+                  field: 'Fmpd5zs7137v5',
+                  title: '单选框',
+                  info: '',
+                  effect: {
+                    fetch: '',
+                  },
+                  options: [
+                    {
+                      value: '1',
+                      label: '选项1',
+                    },
+                    {
+                      value: '2',
+                      label: '选项2',
+                    },
+                  ],
+                  _fc_drag_tag: 'radio',
+                  hidden: false,
+                  display: true,
+                },
+              ],
+            },
+            displayName: '触发器0',
+            disabled: false,
+            value: {},
+            id: 'common-21657bad7c00400a8c829ff044e3ca30',
+            x: 5165,
+            y: 5045,
+          },
+          {
+            type: 'common',
+            nodeName: '动作2',
+            icon: 'House',
+            inputs: ['input1'],
+            outputs: ['output1'],
+            formalParameter: ['key', 'name'],
+            flowType: 'action',
+            parameters: {
+              options: {
+                form: {
+                  labelPosition: 'right',
+                  size: 'mini',
+                  labelWidth: '125px',
+                  hideRequiredAsterisk: false,
+                  showMessage: true,
+                  inlineMessage: false,
+                },
+                submitBtn: true,
+                resetBtn: true,
+              },
+              rule: [
+                {
+                  type: 'input',
+                  field: 'Fgl35zs712gen',
+                  title: '输入框',
+                  info: '',
+                  _fc_drag_tag: 'input',
+                  hidden: false,
+                  display: true,
+                },
+                {
+                  type: 'inputNumber',
+                  field: 'F7ap5zs712ub0',
+                  title: '计数器',
+                  info: '',
+                  _fc_drag_tag: 'inputNumber',
+                  hidden: false,
+                  display: true,
+                },
+                {
+                  type: 'radio',
+                  field: 'Fmpd5zs7137v5',
+                  title: '单选框',
+                  info: '',
+                  effect: {
+                    fetch: '',
+                  },
+                  options: [
+                    {
+                      value: '1',
+                      label: '选项1',
+                    },
+                    {
+                      value: '2',
+                      label: '选项2',
+                    },
+                  ],
+                  _fc_drag_tag: 'radio',
+                  hidden: false,
+                  display: true,
+                },
+              ],
+            },
+            displayName: '动作2',
+            disabled: false,
+            value: {},
+            id: 'common-d0947d7784674bb19d33c59d8368b59e',
+            x: 5310,
+            y: 5310,
+          },
+          {
+            type: 'common',
+            nodeName: '逻辑判断',
+            icon: 'House',
+            inputs: ['input1'],
+            outputs: ['true', 'false'],
+            formalParameter: ['key', 'name'],
+            flowType: 'action',
+            parameters: {
+              options: {
+                form: {
+                  labelPosition: 'right',
+                  size: 'mini',
+                  labelWidth: '125px',
+                  hideRequiredAsterisk: false,
+                  showMessage: true,
+                  inlineMessage: false,
+                },
+                submitBtn: true,
+                resetBtn: true,
+              },
+              rule: [
+                {
+                  type: 'input',
+                  field: 'Fgl35zs712gen',
+                  title: '输入框',
+                  info: '',
+                  _fc_drag_tag: 'input',
+                  hidden: false,
+                  display: true,
+                },
+                {
+                  type: 'inputNumber',
+                  field: 'F7ap5zs712ub0',
+                  title: '计数器',
+                  info: '',
+                  _fc_drag_tag: 'inputNumber',
+                  hidden: false,
+                  display: true,
+                },
+                {
+                  type: 'radio',
+                  field: 'Fmpd5zs7137v5',
+                  title: '单选框',
+                  info: '',
+                  effect: {
+                    fetch: '',
+                  },
+                  options: [
+                    {
+                      value: '1',
+                      label: '选项1',
+                    },
+                    {
+                      value: '2',
+                      label: '选项2',
+                    },
+                  ],
+                  _fc_drag_tag: 'radio',
+                  hidden: false,
+                  display: true,
+                },
+              ],
+            },
+            displayName: '逻辑判断',
+            disabled: false,
+            value: {},
+            id: 'common-c56770095aee4e0581d321230428866d',
+            x: 5325,
+            y: 5055,
+          },
+          {
+            type: 'common',
+            nodeName: '动作2',
+            icon: 'House',
+            inputs: ['input1'],
+            outputs: ['output1'],
+            formalParameter: ['key', 'name'],
+            flowType: 'action',
+            parameters: {
+              options: {
+                form: {
+                  labelPosition: 'right',
+                  size: 'mini',
+                  labelWidth: '125px',
+                  hideRequiredAsterisk: false,
+                  showMessage: true,
+                  inlineMessage: false,
+                },
+                submitBtn: true,
+                resetBtn: true,
+              },
+              rule: [
+                {
+                  type: 'input',
+                  field: 'Fgl35zs712gen',
+                  title: '输入框',
+                  info: '',
+                  _fc_drag_tag: 'input',
+                  hidden: false,
+                  display: true,
+                },
+                {
+                  type: 'inputNumber',
+                  field: 'F7ap5zs712ub0',
+                  title: '计数器',
+                  info: '',
+                  _fc_drag_tag: 'inputNumber',
+                  hidden: false,
+                  display: true,
+                },
+                {
+                  type: 'radio',
+                  field: 'Fmpd5zs7137v5',
+                  title: '单选框',
+                  info: '',
+                  effect: {
+                    fetch: '',
+                  },
+                  options: [
+                    {
+                      value: '1',
+                      label: '选项1',
+                    },
+                    {
+                      value: '2',
+                      label: '选项2',
+                    },
+                  ],
+                  _fc_drag_tag: 'radio',
+                  hidden: false,
+                  display: true,
+                },
+              ],
+            },
+            displayName: '动作2',
+            disabled: false,
+            value: {},
+            id: 'common-74f27436a41f44bcb09eaf57a6019149',
+            x: 5625,
+            y: 5010,
+          },
+        ],
+        linkList: [
+          {
+            type: 'link',
+            id: 'link-e4c707a8f79841078b80d56571daa141',
+            sourceId: 'common-21657bad7c00400a8c829ff044e3ca30',
+            targetId: 'common-c56770095aee4e0581d321230428866d',
+            sourceEndpoint: 'output1',
+            targetEndpoint: 'input1',
+            label: '',
+          },
+          {
+            type: 'link',
+            id: 'link-be8141e936524832808c27f50541ec3f',
+            sourceId: 'common-c56770095aee4e0581d321230428866d',
+            targetId: 'common-d0947d7784674bb19d33c59d8368b59e',
+            sourceEndpoint: 'false',
+            targetEndpoint: 'input1',
+            label: '',
+          },
+          {
+            type: 'link',
+            id: 'link-a40591025b51400e969b63cade1b56ca',
+            sourceId: 'common-c56770095aee4e0581d321230428866d',
+            targetId: 'common-74f27436a41f44bcb09eaf57a6019149',
+            sourceEndpoint: 'true',
+            targetEndpoint: 'input1',
+            label: '',
+          },
+          {
+            type: 'link',
+            id: 'link-fe067fca5b084ea7866c9bb3c87a91df',
+            sourceId: 'common-d0947d7784674bb19d33c59d8368b59e',
+            targetId: 'common-74f27436a41f44bcb09eaf57a6019149',
+            sourceEndpoint: 'output1',
+            targetEndpoint: 'input1',
+            label: '',
+          },
+        ],
+        attr: {
+          id: 'flow-cfb0b971eb4845018c8a59fccf2fa51f',
+        },
+        status: '3',
+      };
+    });
   });
 </script>

@@ -128,13 +128,27 @@
   const plumb = ref();
 
   // 流程当前状态
-  const status = ref();
+  const status = ref('3');
 
   // 流程配置
   const flowConfig = ref(defaultConfig);
 
   // 流程DSL数据
-  const flowData = ref(props.data);
+  const flowData = computed(() => {
+    return props.data;
+  });
+  watch(
+    () => props.data,
+    () => {
+      nextTick(() => {
+        dataInit();
+      });
+    },
+    {
+      deep: false,
+      immediate: true,
+    },
+  );
 
   // 当前选择的节点
   const currentSelect = ref(props.select);
@@ -400,7 +414,7 @@
 
   // 画布自适应
   function zoomFit() {
-    const nodeList = unref(flowData).nodeList;
+    const nodeList = unref(flowData)?.nodeList || [];
     if (!nodeList.length) {
       return;
     }
@@ -708,23 +722,29 @@
     });
   }
 
+  function linkEvent() {}
+
   // 数据初始化
   function dataInit() {
     status.value = FlowStatusEnum.LOADING;
-    if (flowData.value.nodeList.length > 0) {
-      flowData.value.nodeList.forEach((item) => {
-        __addNode(plumb.value, item);
-      });
-    }
-    if (flowData.value.linkList.length > 0) {
-      flowData.value.linkList.forEach((item) => {
-        __addLink(
-          plumb.value,
-          { id: item.sourceId, endpoint: item.sourceEndpoint },
-          { id: item.targetId, endpoint: item.targetEndpoint },
-          { id: item.id, label: item.label },
-        );
-      });
+    try {
+      if (flowData.value.nodeList && flowData.value.nodeList.length > 0) {
+        flowData.value.nodeList.forEach((item) => {
+          __addNode(plumb.value, item);
+        });
+      }
+      if (flowData.value.linkList && flowData.value.linkList.length > 0) {
+        flowData.value.linkList.forEach((item) => {
+          __addLink(
+            plumb.value,
+            { id: item.sourceId, endpoint: item.sourceEndpoint },
+            { id: item.targetId, endpoint: item.targetEndpoint },
+            { id: item.id, label: item.label },
+          );
+        });
+      }
+    } catch (e) {
+      console.error('渲染失败');
     }
     status.value = FlowStatusEnum.MODIFY;
   }
@@ -806,7 +826,6 @@
 
   onMounted(() => {
     initJsPlumb();
-    dataInit();
     zoomFit();
   });
 
