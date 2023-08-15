@@ -84,7 +84,6 @@
 
 <script lang="ts" setup>
   import { reactive, ref, onMounted, unref, nextTick } from 'vue';
-  import { cloneDeep } from 'lodash-es';
   import FlowArea from './modules/FlowArea.vue';
   import FlowElement from './modules/FlowElement.vue';
   import Toolbar from './modules/Toolbar.vue';

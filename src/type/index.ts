@@ -64,4 +64,10 @@ export interface IShortcutKey {
   shortcutName: string;
 }
 
+export interface IZoomConfig {
+  scale: number;
+  x: number;
+  y: number;
+}
+
 export type ISettingConfig = typeof settingConfig;

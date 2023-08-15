@@ -37,9 +37,7 @@
     <div class="node-setting">
       <el-icon @click="setNodeParams(node)"><Tools /></el-icon>
     </div>
-    <div class="node-icon">
-      <component :is="node.icon" />
-    </div>
+    <img class="node-icon" src="http://dummyimage.com/100x100" />
     <div class="node-description">
       <div class="node-name" :title="node.displayName">
         <p data-test-id="canvas-node-box-title">

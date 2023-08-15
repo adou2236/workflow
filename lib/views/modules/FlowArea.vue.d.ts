@@ -1,7 +1,6 @@
 import { PropType } from 'vue';
 import { INode, ILink } from '../../type';
-declare function enlargeContainer(): void;
-declare function narrowContainer(): void;
+declare function zoomFit(): void;
 declare function deleteNode(nodes: INode[] | INode): void;
 declare const _default: import("vue").DefineComponent<{
     data: {
@@ -27,6 +26,7 @@ declare const _default: import("vue").DefineComponent<{
 }, {
     getPreNodes: (nodeId: any) => INode[];
     clear: () => void;
+    setStatus: (id: any, status: any, message: any) => void;
     container: {
         pos: {
             top: number;
@@ -40,7 +40,6 @@ declare const _default: import("vue").DefineComponent<{
             x: number;
             y: number;
         };
-        scaleShow: number;
         auxiliaryLine: {
             isOpen: boolean;
             isShowXLine: boolean;
@@ -59,8 +58,9 @@ declare const _default: import("vue").DefineComponent<{
         width: number;
     };
     deleteNode: typeof deleteNode;
-    narrowContainer: typeof narrowContainer;
-    enlargeContainer: typeof enlargeContainer;
+    zoomOut: import("lodash").DebouncedFunc<() => void>;
+    zoomIn: import("lodash").DebouncedFunc<() => void>;
+    zoomFit: typeof zoomFit;
     plumb: import("vue").Ref<any>;
 }, unknown, {}, {}, import("vue").ComponentOptionsMixin, import("vue").ComponentOptionsMixin, ("update:select" | "update:selectGroup" | "setNodeParams" | "addNode" | "onShortcutKey" | "saveFlow" | "update:data")[], "update:select" | "update:selectGroup" | "setNodeParams" | "addNode" | "onShortcutKey" | "saveFlow" | "update:data", import("vue").VNodeProps & import("vue").AllowedComponentProps & import("vue").ComponentCustomProps, Readonly<import("vue").ExtractPropTypes<{
     data: {

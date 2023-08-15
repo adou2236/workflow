@@ -1,6 +1,8 @@
 import { idType as flowIdType } from '@/config/flow';
 import { IdTypeEnum } from '@/type/enums';
+import { INode, IZoomConfig } from '@/type';
 
+const NODE_SIZE = 80;
 export const utils = {
   seqNo: 1,
   consoleLog: function (strArr) {
@@ -128,3 +130,128 @@ export function setFlowConfig(config, settingConfig) {
 
   return config;
 }
+
+// 获取自适应缩放
+export function getZoomToFit(nodeList: INode[]): { x: number; y: number; zoomLevel: number } {
+  const { minX, minY, maxX, maxY } = getWorkflowCorners(nodeList);
+  const { editorWidth, editorHeight } = getContentDimensions();
+
+  const PADDING = NODE_SIZE * 4;
+
+  const diffX = maxX - minX + PADDING;
+  const scaleX = editorWidth / diffX;
+
+  const diffY = maxY - minY + PADDING;
+  const scaleY = editorHeight / diffY;
+
+  const zoomLevel = Math.min(scaleX, scaleY, 1);
+
+  let xOffset = minX * -1 * zoomLevel; // find top right corner
+  xOffset += (editorWidth - (maxX - minX) * zoomLevel) / 2; // add padding to center workflow
+
+  let yOffset = minY * -1 * zoomLevel; // find top right corner
+  yOffset += (editorHeight - (maxY - minY) * zoomLevel) / 2; // add padding to center workflow
+
+  return {
+    zoomLevel,
+    x: closestNumberDivisibleBy(xOffset, 20),
+    y: closestNumberDivisibleBy(yOffset, 20),
+  };
+}
+
+export const getWorkflowCorners = (nodes: INode[]) => {
+  return nodes.reduce(
+    (accu, node) => {
+      const xOffset = NODE_SIZE;
+      const yOffset = NODE_SIZE;
+
+      const x = node.x;
+      const y = node.y;
+
+      if (x < accu.minX) {
+        accu.minX = x;
+      }
+      if (y < accu.minY) {
+        accu.minY = y;
+      }
+      if (x + NODE_SIZE > accu.maxX) {
+        accu.maxX = x + xOffset;
+      }
+      if (y + yOffset > accu.maxY) {
+        accu.maxY = y + yOffset;
+      }
+
+      return accu;
+    },
+    {
+      minX: nodes[0].x,
+      minY: nodes[0].y,
+      maxX: nodes[0].x,
+      maxY: nodes[0].y,
+    },
+  );
+};
+
+export const closestNumberDivisibleBy = (inputNumber: number, divisibleBy: number): number => {
+  const quotient = Math.ceil(inputNumber / divisibleBy);
+
+  // 1st possible closest number
+  const inputNumber1 = divisibleBy * quotient;
+
+  // 2nd possible closest number
+  const inputNumber2 =
+    inputNumber * divisibleBy > 0 ? divisibleBy * (quotient + 1) : divisibleBy * (quotient - 1);
+
+  // if true, then inputNumber1 is the required closest number
+  if (Math.abs(inputNumber - inputNumber1) < Math.abs(inputNumber - inputNumber2)) {
+    return inputNumber1;
+  }
+
+  // else inputNumber2 is the required closest number
+  return inputNumber2;
+};
+
+const getContentDimensions = (): { editorWidth: number; editorHeight: number } => {
+  let contentWidth = window.innerWidth;
+  let contentHeight = window.innerHeight;
+  const nodeViewRoot = document.getElementById('flow-area-root');
+
+  if (nodeViewRoot) {
+    console.log('???');
+    const contentBounds = nodeViewRoot.getBoundingClientRect();
+    contentWidth = contentBounds.width;
+    contentHeight = contentBounds.height;
+  }
+  return {
+    editorWidth: contentWidth,
+    editorHeight: contentHeight,
+  };
+};
+
+export const scaleSmaller = ({ scale, x, y }: IZoomConfig): IZoomConfig => {
+  scale /= 1.25;
+  x /= 1.25;
+  y /= 1.25;
+  x += window.innerWidth / 10;
+  y += window.innerHeight / 10;
+
+  return {
+    scale,
+    x,
+    y,
+  };
+};
+
+export const scaleBigger = ({ scale, x, y }: IZoomConfig): IZoomConfig => {
+  scale *= 1.25;
+  x -= window.innerWidth / 10;
+  y -= window.innerHeight / 10;
+  x *= 1.25;
+  y *= 1.25;
+
+  return {
+    scale,
+    x,
+    y,
+  };
+};

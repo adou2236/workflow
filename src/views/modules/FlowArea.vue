@@ -1,5 +1,11 @@
 <template>
-  <div class="flow-area" @dragover="handleDragover" @drop.capture="handleDrop">
+  <div
+    class="flow-area"
+    id="flow-area-root"
+    @dragover="handleDragover"
+    @drop="handleDrop"
+    @wheel="handleScroll"
+  >
     <!--辅助线X-->
     <div
       v-if="container.auxiliaryLine.isOpen && container.auxiliaryLine.isShowXLine"
@@ -51,7 +57,12 @@
       />
       <div
         class="flow-area__multiple"
-        v-if="rectangleMultiple.flag && rectangleMultiple.multipling"
+        v-if="
+          rectangleMultiple.flag &&
+          rectangleMultiple.multipling &&
+          rectangleMultiple.width &&
+          rectangleMultiple.height
+        "
         :style="{
           top: rectangleMultiple.position.top + 'px',
           left: rectangleMultiple.position.left + 'px',
@@ -60,25 +71,13 @@
         }"
       ></div>
     </div>
-    <div class="flow-area__scale">
-      <el-button size="small" type="default" @click="narrowContainer">
-        <template #icon>
-          <el-icon><Minus /></el-icon>
-        </template>
-      </el-button>
-      <span>{{ container.scaleShow }}% </span>
-      <el-button size="small" type="default" @click="enlargeContainer">
-        <template #icon>
-          <el-icon><Plus /></el-icon>
-        </template>
-      </el-button>
-    </div>
   </div>
 </template>
 
 <script lang="ts" setup>
+  import { throttle } from 'lodash-es';
   import { reactive, ref, computed, watch, unref, PropType, nextTick, onMounted } from 'vue';
-  import { utils } from '@/utils/common';
+  import { getZoomToFit, scaleBigger, scaleSmaller, utils } from '@/utils/common';
   import FlowNode from './FlowNode.vue';
   import { useContextMenu } from '@/hooks/useContextMenu';
   import { CommonNodeTypeEnum, FlowStatusEnum } from '@/type/enums';
@@ -88,6 +87,7 @@
   import funcInstall from '@/utils';
   import { __addNode, __addLink } from '@/utils/nodeBase';
   import { flowConfig as defaultConfig } from '@/config/flow';
+  import normalizeWheel from 'normalize-wheel';
 
   const props = defineProps({
     data: {
@@ -155,7 +155,6 @@
       x: 0,
       y: 0,
     },
-    scaleShow: utils.mul(flowConfig.value.defaultStyle.containerScale.init, 100),
     // 辅助线
     auxiliaryLine: {
       isOpen: flowConfig.value.defaultStyle.isOpenAuxiliaryLine,
@@ -262,16 +261,6 @@
         mouse.position.y = target.offsetTop + e.offsetY;
       }
     }
-    if (container.draging) {
-      let nTop = container.pos.top + (mouse.position.y - mouse.tempPos.y);
-      let nLeft = container.pos.left + (mouse.position.x - mouse.tempPos.x);
-      if (nTop >= 0) nTop = 0;
-      if (nLeft >= 0) nLeft = 0;
-      container.pos = {
-        top: nTop,
-        left: nLeft,
-      };
-    }
     if (rectangleMultiple.multipling) {
       let h = mouse.position.y - mouse.tempPos.y;
       let w = mouse.position.x - mouse.tempPos.x;
@@ -336,29 +325,18 @@
   // 画布鼠标按下
   function mousedownHandler(e: MouseEvent) {
     if (e.button === 0) {
-      if (container.dragFlag) {
-        mouse.tempPos = mouse.position;
-        container.draging = true;
-      }
-
       currentSelectGroup.value = [];
-      if (true) {
-        mouse.tempPos = mouse.position;
-        rectangleMultiple.multipling = true;
-      }
+      mouse.tempPos = mouse.position;
+      rectangleMultiple.multipling = true;
     }
   }
 
   // 画布鼠标点击松开
-  function mouseupHandler() {
-    if (container.draging) container.draging = false;
-    if (true) {
-      // 鼠标划框内的节点
-      judgeSelectedNode();
-      rectangleMultiple.multipling = false;
-      rectangleMultiple.width = 0;
-      rectangleMultiple.height = 0;
-    }
+  function mouseupHandler(e: MouseEvent) {
+    judgeSelectedNode();
+    rectangleMultiple.multipling = false;
+    rectangleMultiple.width = 0;
+    rectangleMultiple.height = 0;
   }
 
   // 鼠标划框内的节点
@@ -367,10 +345,16 @@
     let ax = rectangleMultiple.position.left;
     let by = ay + rectangleMultiple.height;
     let bx = ax + rectangleMultiple.width;
+    let halfNodeWidth = 40;
 
     let nodeList = unref(flowData).nodeList;
     nodeList.forEach((node: INode) => {
-      if (node.y >= ay && node.x >= ax && node.y <= by && node.x <= bx) {
+      if (
+        node.y + halfNodeWidth >= ay &&
+        node.x + halfNodeWidth >= ax &&
+        node.y + halfNodeWidth <= by &&
+        node.x + halfNodeWidth <= bx
+      ) {
         plumb.value.addToDragSelection(node.id);
         unref(currentSelectGroup).push(node);
       }
@@ -381,41 +365,50 @@
   function scaleContainer(e: WheelEvent) {
     if (container.scaleFlag) {
       if (e.deltaY < 0) {
-        enlargeContainer();
+        zoomIn();
       } else if (container.scale) {
-        narrowContainer();
+        zoomOut();
       }
     }
   }
 
   // 画布放大
-  function enlargeContainer() {
-    container.scaleOrigin.x = mouse.position.x;
-    container.scaleOrigin.y = mouse.position.y;
-    let newScale = utils.add(
-      container.scale,
-      flowConfig.value.defaultStyle.containerScale.onceEnlarge,
-    );
-    if (newScale <= flowConfig.value.defaultStyle.containerScale.max) {
-      container.scale = newScale;
-      container.scaleShow = utils.mul(container.scale, 100);
-      plumb.value.setZoom(container.scale);
-    }
-  }
+  const zoomIn = throttle(() => {
+    const { scale, x, y } = scaleBigger({
+      scale: container.scale,
+      x: container.pos.left,
+      y: container.pos.top,
+    });
+    container.scale = scale;
+    plumb.value.setZoom(container.scale);
+    container.pos.left = x;
+    container.pos.top = y;
+  }, 20);
 
   // 画布缩小
-  function narrowContainer() {
-    container.scaleOrigin.x = mouse.position.x;
-    container.scaleOrigin.y = mouse.position.y;
-    let newScale = utils.sub(
-      container.scale,
-      flowConfig.value.defaultStyle.containerScale.onceNarrow,
-    );
-    if (newScale >= flowConfig.value.defaultStyle.containerScale.min) {
-      container.scale = newScale;
-      container.scaleShow = utils.mul(container.scale, 100);
-      plumb.value.setZoom(container.scale);
+  const zoomOut = throttle(() => {
+    const { scale, x, y } = scaleSmaller({
+      scale: container.scale,
+      x: container.pos.left,
+      y: container.pos.top,
+    });
+    container.scale = scale;
+    plumb.value.setZoom(container.scale);
+    container.pos.left = x;
+    container.pos.top = y;
+  }, 20);
+
+  // 画布自适应
+  function zoomFit() {
+    const nodeList = unref(flowData).nodeList;
+    if (!nodeList.length) {
+      return;
     }
+    const { zoomLevel, x, y } = getZoomToFit(nodeList);
+    container.scale = zoomLevel;
+    plumb.value.setZoom(zoomLevel);
+    container.pos.left = x;
+    container.pos.top = y;
   }
 
   // 画布右健
@@ -736,10 +729,6 @@
     status.value = FlowStatusEnum.MODIFY;
   }
 
-  function canvasInit() {
-    window.document.getElementsByClassName('flow-area')[0].scrollTo(5000, 5000);
-  }
-
   function setReadOnly(flag: boolean) {
     unref(plumb).setSuspendDrawing(flag);
     const connections = unref(plumb).getAllConnections();
@@ -768,6 +757,34 @@
     });
   }
 
+  // 鼠标滚动事件
+  function handleScroll(e: WheelEvent) {
+    if (e.ctrlKey) {
+      if (e.deltaY > 0) {
+        zoomOut();
+      } else {
+        zoomIn();
+      }
+
+      e.preventDefault();
+      return;
+    }
+    moveWorkflow(e);
+  }
+
+  // 移动画布
+  function moveWorkflow(e: WheelEvent) {
+    const normalized = normalizeWheel(e);
+    const nodeViewOffsetPositionX =
+      container.pos.left - (e.shiftKey ? normalized.pixelY : normalized.pixelX);
+    const nodeViewOffsetPositionY =
+      container.pos.top - (e.shiftKey ? normalized.pixelX : normalized.pixelY);
+    container.pos = {
+      top: nodeViewOffsetPositionY,
+      left: nodeViewOffsetPositionX,
+    };
+  }
+
   // 删除线
   function deleteLink() {
     let sourceId = (unref(currentSelect) as ILink)?.sourceId;
@@ -790,18 +807,16 @@
   onMounted(() => {
     initJsPlumb();
     dataInit();
-    nextTick(() => {
-      // setReadOnly(props.readOnly);
-    });
-    // canvasInit();
+    zoomFit();
   });
 
   defineExpose({
     container,
     rectangleMultiple,
     deleteNode,
-    narrowContainer,
-    enlargeContainer,
+    zoomOut,
+    zoomIn,
+    zoomFit,
     plumb,
     ...funcInstall({ flowData: flowData, plumb: plumb }),
   });
@@ -851,7 +866,7 @@
   watch(
     () => props.readOnly,
     (v) => {
-      // setReadOnly(v);
+      setReadOnly(v);
     },
   );
 </script>

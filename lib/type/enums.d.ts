@@ -35,3 +35,9 @@ export declare enum FLOW_TYPE {
     TRIGGER = "trigger",
     ACTION = "action"
 }
+export declare enum NOTIFICATION_STATUS {
+    INFO = "info",
+    SUCCESS = "success",
+    WARNING = "warning",
+    ERROR = "error"
+}
