@@ -1,11 +1,4 @@
-@common-node-bg: #f4f6fc;
-@common-node-bg-hover: #f4f6fcb0;
-@common-node-active: rgba(85, 85, 85, 0.39);
-@primary-color: #FF6D5A;
-@success-color: #67c23a;
-@warning-color: #e6a23c;
-@info-color: #909399;
-@error-color: #f56c6c;
+@import "variable.module.scss";
 
 
 .node-box {
@@ -17,15 +10,15 @@
   width: 80px;
   line-height: 80px;
   text-align: center;
-  border: 2px solid rgb(125, 131, 143);
+  border: 2px solid var(--el-border-color-dark);
   border-radius: 5px;
-  background-color: @common-node-bg;
+  background-color: $common-node-bg;
   white-space: nowrap;
   box-shadow: 2px 2px 5px #ddd;
 
 
   &.active {
-    outline: 4px solid @common-node-active;
+    outline: 4px solid $common-node-active;
     outline-offset: 0;
   }
 
@@ -35,26 +28,26 @@
   }
 
   &.disabled{
-    border-color: rgb(219, 223, 231);
-    background: white;
+    border-color: var(--el-disabled-border-color);
+    background: var(--el-disabled-bg-color);
     box-shadow: none;
   }
 
   // TODO 改成scss
   &[status=success] {
-    border-color: @success-color
+    border-color: $success-color
   }
 
   &[status=error] {
-    border-color: @error-color
+    border-color: $error-color
   }
 
   &[status=info] {
-    border-color: @info-color
+    border-color: $info-color
   }
 
   &[status=warning] {
-    border-color: @warning-color;
+    border-color: $warning-color;
 
   }
 
@@ -68,8 +61,8 @@
 }
 
 .anchor-item > label{
-  background-color: rgba(213, 213, 213, 0.85);
-  color: rgb(85, 85, 85);
+  background-color: $common-node-bg;
+  color: var(--el-text-color);
   border-radius: 7px;
   font-size: 12px;
   line-height: 12px;
@@ -94,7 +87,7 @@
   display: flex;
   visibility: hidden;
   &:hover{
-    color: @primary-color;
+    color: $primary-color;
   }
 }
 .node-notification {
@@ -131,25 +124,15 @@
   pointer-events: none; // prevent container from being draggable
 
   .node-name > p {
-    // must be paragraph tag to have two lines in safari
     text-overflow: ellipsis;
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
     overflow: hidden;
     overflow-wrap: anywhere;
-    font-weight: var(--font-weight-bold);
-    line-height: var(--font-line-height-compact);
+    font-weight: var(--el-link-font-weight);
+    line-height: var(--el-font-line-height-primary);
     margin: 0;
-  }
-
-  .node-subtitle {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    font-weight: 400;
-    color: #000;
-    font-size: 0.8em;
   }
 }
 
@@ -166,7 +149,7 @@
     }
   }
   &:not(.disabled):hover {
-    background-color: @common-node-bg-hover;
+    background-color: $common-node-bg-hover;
     z-index: 2;
     .node-setting{
       visibility: visible;

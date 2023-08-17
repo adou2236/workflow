@@ -1,6 +1,7 @@
 import type { INode } from '@/type';
 import { Endpoint, EndpointOptions, jsPlumbInstance } from 'jsplumb';
 import { FLOW_TYPE } from '@/type/enums';
+import variable from '@/assets/style/variable.module.scss';
 
 export const getEndpointUUID = (nodeId: string, type: string, outputIndex: number) => {
   return `${nodeId}${type}${outputIndex}`;
@@ -79,16 +80,16 @@ export function __addInputEndpoints(node: INode): EndpointOptions[] {
       paintStyle: {
         width: 4,
         height: 12,
-        fill: '#555555',
-        stroke: '#555555',
+        fill: variable['rect-color'],
+        stroke: variable['rect-color'],
         lineWidth: 0,
       },
       hoverPaintStyle: {
         width: 4,
         height: 12,
-        fill: '#FF6D5A',
-        stroke: '#FF6D5A',
-        lineWidth: 0,
+        fill: variable['primary-color'],
+        stroke: variable['primary-color'],
+        lineWidth: 2,
       },
       isSource: false,
       isTarget: true,
@@ -159,12 +160,12 @@ export function __addOutputEndpoints(node: INode): EndpointOptions[] {
       endpoint: ['Dot', { radius: 6 }],
       paintStyle: {
         strokeWidth: 4,
-        fill: '#555555',
+        fill: variable['rect-color'],
         outlineStroke: 'none',
       },
       hoverPaintStyle: {
         strokeWidth: 4,
-        fill: '#FF6D5A',
+        fill: variable['primary-color'],
         outlineStroke: 'none',
       },
       isSource: true,

@@ -126,24 +126,6 @@
     error: 'CircleCloseFilled',
   });
 
-  // 设置ICON
-  function setIcon(type: NodesType) {
-    switch (type) {
-    }
-  }
-
-  // 设置鼠标样式
-  function setCursor(type: ToolsTypeEnum) {
-    switch (type) {
-      case 'drag':
-        return 'move';
-      case 'connection':
-        return 'crosshair';
-      default:
-        return 'default';
-    }
-  }
-
   // 初始节点拖拽
   function registerNode() {
     props.plumb!.draggable(currentNode.id, {
@@ -185,17 +167,18 @@
   // 点击节点
   function selectNode() {
     currentSelect.value = currentNode;
-    emits('isMultiple', (flag: boolean) => {
-      if (!flag) {
-        currentSelectGroup.value = [];
-      } else {
-        let f = unref(currentSelectGroup).find((s) => s.id === currentNode.id);
-        if (f) {
-          props.plumb!.addToDragSelection(currentNode.id);
-          currentSelectGroup.value.push(currentNode);
-        }
-      }
-    });
+    currentSelectGroup.value = [];
+    // emits('isMultiple', (flag: boolean) => {
+    //   if (!flag) {
+    //     currentSelectGroup.value = [];
+    //   } else {
+    //     let f = unref(currentSelectGroup).find((s) => s.id === currentNode.id);
+    //     if (f) {
+    //       props.plumb!.addToDragSelection(currentNode.id);
+    //       currentSelectGroup.value.push(currentNode);
+    //     }
+    //   }
+    // });
   }
   // 节点右键
   function showNodeContextMenu(node) {

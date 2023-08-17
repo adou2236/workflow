@@ -1,5 +1,5 @@
 import flowArea from './views/modules/FlowArea.vue';
-import '@/assets/style/index.less';
+import '@/assets/style/index.scss';
 import { flowConfig } from './config/flow';
 
 const install = (Vue) => {

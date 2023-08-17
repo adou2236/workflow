@@ -1,0 +1,13 @@
+$common-node-bg: var(--el-bg-color-page);
+$common-node-bg-hover: var(--el-fill-color-lighter);
+$common-node-active: var(--el-border-color-darker);
+$primary-color: var(--el-color-primary);
+$success-color: var(--el-color-success);
+$warning-color: var(--el-color-warning);
+$info-color: var(--el-color-info);
+$error-color: var(--el-color-error);
+$rect-color:  var(--el-text-color-regular);
+:export {
+  primary-color: $primary-color;
+  rect-color: $rect-color
+}

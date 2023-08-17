@@ -1,5 +1,6 @@
 import { Defaults } from 'jsplumb';
 import { IdTypeEnum } from '@/type/enums';
+import variable from '@/assets/style/variable.module.scss';
 
 export const settingConfig = {
   containerScale: {
@@ -8,7 +9,7 @@ export const settingConfig = {
   },
   cls: {
     linkType: 'Bezier',
-    linkColor: '#2a2929',
+    linkColor: variable['rect-color'],
     linkThickness: 2,
   },
   other: {
@@ -43,7 +44,7 @@ const jsPlumbInsConfig: Defaults = {
     strokeWidth: settingConfig.cls.linkThickness,
   },
   HoverPaintStyle: {
-    stroke: '#409EFF',
+    stroke: variable['primary-color'],
     strokeWidth: 3,
   },
   EndpointStyle: {

@@ -257,27 +257,17 @@
 
   // 画布鼠标移动
   function mousemoveHandler(e: MouseEvent) {
-    const target = e?.target as HTMLElement;
-
-    if (target.id === 'flowContainer') {
-      mouse.position = {
-        x: e.offsetX,
-        y: e.offsetY,
-      };
-    } else {
-      let cn = target.className;
-      let tn = target.tagName;
-      if (
-        cn !== 'lane-text' &&
-        cn !== 'lane-text-div' &&
-        tn !== 'svg' &&
-        tn !== 'path' &&
-        tn !== 'I'
-      ) {
-        mouse.position.x = target.offsetLeft + e.offsetX;
-        mouse.position.y = target.offsetTop + e.offsetY;
-      }
+    const canvasRect = document.getElementById('flowContainer')?.getBoundingClientRect();
+    if (!canvasRect) {
+      return;
     }
+    const offsetX = e.clientX - canvasRect.left;
+    const offsetY = e.clientY - canvasRect.top;
+
+    mouse.position = {
+      x: offsetX,
+      y: offsetY,
+    };
     if (rectangleMultiple.multipling) {
       let h = mouse.position.y - mouse.tempPos.y;
       let w = mouse.position.x - mouse.tempPos.x;
@@ -301,6 +291,14 @@
       rectangleMultiple.position.left = l;
     }
   }
+
+  // function getPos(e, res) {
+  //   if (e.parentNode.id === 'flowContainer') {
+  //     return res;
+  //   } else {
+  //     return getPos(e.parent);
+  //   }
+  // }
 
   // x, y取整计算
   function computeNodePos(x: number, y: number) {
@@ -662,21 +660,17 @@
   function initJsPlumb() {
     plumb.value = jsPlumb.getInstance(unref(flowConfig).jsPlumbInsConfig);
 
-    // unref(plumb).bind('beforeDrop', (info: Recordable) => {
-    //   let sourceId = info.sourceId;
-    //   let targetId = info.targetId;
-    //
-    //   // 不允许循环
-    //   // if (sourceId === targetId) return false;
-    //   // let notOnlyLink = flowData.value.linkList.find(
-    //   //   (link: ILink) => link.sourceId === sourceId && link.targetId === targetId,
-    //   // );
-    //   // if (notOnlyLink) {
-    //   //   message.error('同方向的两节点连线只能有一条！');
-    //   //   return false;
-    //   // }
-    //   return true;
-    // });
+    unref(plumb).bind('beforeDrop', (info: Recordable) => {
+      let sourceId = info.sourceId;
+      let targetId = info.targetId;
+
+      // 不允许自连接
+      // if (sourceId === targetId) return false;
+      let notOnlyLink = flowData.value.linkList.find(
+        (link: ILink) => link.sourceId === sourceId && link.targetId === targetId,
+      );
+      return !notOnlyLink;
+    });
 
     unref(plumb).bind('connection', (conn: Recordable) => {
       let connObj = conn.connection.canvas;
