@@ -7,13 +7,23 @@
   "linkList": Link[], // 连接线列表
   "attr": [key: string]: any, // 其他冗余数据
   "status": enum, // 全流程状态
+  "id": string; // 工作流id
+  "name": string; // 工作流名称
 }
 
 type Node {
     type: string, //节点类型
-    id: string, // 自动生成的唯一id
+    nodeName: string, //节点唯一名称
+    flowType: "action" | "trigger", // 节点功能 动作或触发器
+    inputs: string[], // 工作流入
+    outputs: string[], // 工作流出
+    icon: string, // 图标
+    description?: string, //节点描述
+    disabled?: boolean, //是否禁用
     displayName: string, // 节点展示名称
-    value: [key: string]: any, // 节点内属性值
+    parameters: Schema, // 节点配置schema
+    setting: [key: string]: any, // 节点基础设置 重试策略等
+    value: [key: string]: any, // 节点属性值
     x: number, // 横坐标
     y: number, // 纵坐标
 }

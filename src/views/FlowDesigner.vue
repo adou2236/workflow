@@ -360,7 +360,7 @@
 
     // 初始化流程图
     // initFlow();
-    nextTick(() => {
+    setTimeout(() => {
       flowData.value = {
         nodeList: [
           {
@@ -691,6 +691,6 @@
         },
         status: '3',
       };
-    });
+    }, 2000);
   });
 </script>

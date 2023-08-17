@@ -143,6 +143,7 @@
     () => props.data,
     () => {
       nextTick(() => {
+        setReadOnly(false);
         dataInit();
       });
     },
