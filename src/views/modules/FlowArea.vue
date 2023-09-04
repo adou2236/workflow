@@ -25,69 +25,73 @@
       class="flow-area__container"
       :class="{
         grid: flowConfig.defaultStyle.showGrid,
-        canDrag: container.dragFlag,
-        canMultiple: rectangleMultiple.flag,
         readOnly: props.readOnly,
       }"
       :style="gridStyle"
-      @click="containerHandler"
-      @mousedown="mousedownHandler"
       @mousemove="mousemoveHandler"
-      @mouseup="mouseupHandler"
-      @mousewheel="scaleContainer"
-      @DOMMouseScroll="scaleContainer"
       @contextmenu="showContainerContextMenu"
     >
       <flow-node
-        v-for="node in flowData.nodeList"
+        v-for="node in flowData.nodes"
         :key="node.id"
         :node="node"
+        :nodes="flowData.nodes"
         :plumb="plumb"
         :config="flowConfig"
+        @click.stop
         v-model:select="currentSelect"
         v-model:selectGroup="currentSelectGroup"
         @showNodeContextMenu="showNodeContextMenu"
-        @isMultiple="isMultiple"
-        @updateNodePos="updateNodePos"
         @updateNodeDisable="updateNodeDisable"
         @nodeDelete="deleteNode"
         @setNodeParams="(v) => emits('setNodeParams', v)"
-        @alignForLine="alignForLine"
-        @hideAlignLine="hideAlignLine"
-      />
-      <div
-        class="flow-area__multiple"
-        v-if="
-          rectangleMultiple.flag &&
-          rectangleMultiple.multipling &&
-          rectangleMultiple.width &&
-          rectangleMultiple.height
-        "
-        :style="{
-          top: rectangleMultiple.position.top + 'px',
-          left: rectangleMultiple.position.left + 'px',
-          width: rectangleMultiple.width + 'px',
-          height: rectangleMultiple.height + 'px',
-        }"
-      ></div>
+      >
+        <!--        是否选用树型结构-->
+      </flow-node>
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-  import { throttle } from 'lodash-es';
-  import { reactive, ref, computed, watch, unref, PropType, nextTick, onMounted } from 'vue';
+  import { cloneDeep, throttle } from 'lodash-es';
+  import {
+    computed,
+    nextTick,
+    onMounted,
+    PropType,
+    provide,
+    reactive,
+    ref,
+    unref,
+    watch,
+  } from 'vue';
   import { getZoomToFit, scaleBigger, scaleSmaller, utils } from '@/utils/common';
   import FlowNode from './FlowNode.vue';
   import { useContextMenu } from '@/hooks/useContextMenu';
-  import { CommonNodeTypeEnum, FlowStatusEnum } from '@/type/enums';
-  import { INode, ILink, IElement } from '@/type';
-  import { commonNodes } from '@/config/nodes';
-  import { jsPlumb } from 'jsplumb';
+  import { FlowStatusEnum, NodeType } from '@/type/enums';
+  import { IEdge, INode, IProcess, ISubProcess } from '@/type';
   import funcInstall from '@/utils';
-  import { __addNode, __addLink } from '@/utils/nodeBase';
   import { flowConfig as defaultConfig } from '@/config/flow';
   import normalizeWheel from 'normalize-wheel';
+  import DragSelect from 'dragselect';
+  import {
+    CONNECTION,
+    EVENT_CONNECTION_ABORT,
+    EVENT_CONNECTION_CLICK,
+    EVENT_CONNECTION_CONTEXTMENU,
+    EVENT_CONNECTION_DBL_CLICK,
+    EVENT_CONNECTION_DETACHED,
+    EVENT_CONNECTION_DRAG,
+    EVENT_DRAG_MOVE,
+    EVENT_DRAG_START,
+    EVENT_DRAG_STOP,
+    EVENT_GROUP_MEMBER_ADDED,
+    EVENT_GROUP_EXPAND,
+    ready,
+  } from '@jsplumb/browser-ui';
+  import { NODE_SIZE } from '@/config/const';
+  import plumbRegister from '@/utils/plumbRegister';
+  import { commonNodes } from '@/config/nodes';
 
   const props = defineProps({
     data: {
@@ -99,7 +103,7 @@
       default: () => undefined,
     },
     select: {
-      type: Object as PropType<INode | ILink>,
+      type: Object as PropType<INode | IEdge>,
       default: () => ({}),
     },
     selectGroup: {
@@ -113,7 +117,6 @@
   });
 
   const emits = defineEmits([
-    'addNode',
     'setNodeParams',
     'onShortcutKey',
     'saveFlow',
@@ -127,10 +130,10 @@
   // 流程实例
   const plumb = ref();
 
-  const initDone = ref(false);
-
   // 流程当前状态
   const status = ref('3');
+
+  const ds = ref();
 
   // 流程配置
   const flowConfig = ref(defaultConfig);
@@ -143,7 +146,7 @@
     () => props.data,
     () => {
       nextTick(() => {
-        setReadOnly(false);
+        // setReadOnly(false);
         dataInit();
       });
     },
@@ -154,15 +157,15 @@
   );
 
   // 当前选择的节点
-  const currentSelect = ref(props.select);
+  const currentSelect = ref<IEdge | INode>(props.select);
 
   // 当前选择的节点组
   const currentSelectGroup = ref(props.selectGroup);
 
   const container = reactive({
     pos: {
-      top: -5000,
-      left: -5000,
+      top: 0,
+      left: 0,
     },
     dragFlag: false,
     draging: false,
@@ -199,18 +202,6 @@
     },
   });
 
-  // 鼠标划框多选
-  const rectangleMultiple = reactive({
-    flag: true, // 是否按了shift键
-    multipling: false,
-    position: {
-      top: 0,
-      left: 0,
-    },
-    height: 0,
-    width: 0,
-  });
-
   // 当前聚焦的连接线ID
   let tempLinkId = '';
 
@@ -231,28 +222,14 @@
     mousemoveHandler(e);
   }
 
-  // 查找相关节点
-  function findNodeConfig(dragInfo: IElement) {
-    let node: IElement | undefined;
-    const { nodeName } = dragInfo;
-
-    node = commonNodes.find((n) => n.nodeName === nodeName);
-
-    if (!node) {
-      console.error('未知的节点类型！');
-      return;
-    }
-
-    // 增加节点
-    addNewNode(dragInfo);
-  }
-
   // 组件拖拽入画布
-  function handleDrop(event) {
+  function handleDrop() {
     if (props.readOnly) return;
-    // 复位拖拽工具
-    let dragInfo = event.dataTransfer.getData('dragInfo');
-    addNewNode(JSON.parse(dragInfo));
+    let dragInfo = window.dragInfo;
+    if (dragInfo) {
+      addNewNode(dragInfo);
+      window.dragInfo = null;
+    }
   }
 
   // 画布鼠标移动
@@ -263,33 +240,10 @@
     }
     const offsetX = e.clientX - canvasRect.left;
     const offsetY = e.clientY - canvasRect.top;
-
     mouse.position = {
       x: offsetX,
       y: offsetY,
     };
-    if (rectangleMultiple.multipling) {
-      let h = mouse.position.y - mouse.tempPos.y;
-      let w = mouse.position.x - mouse.tempPos.x;
-      let t = mouse.tempPos.y;
-      let l = mouse.tempPos.x;
-      if (h >= 0 && w < 0) {
-        w = -w;
-        l -= w;
-      } else if (h < 0 && w >= 0) {
-        h = -h;
-        t -= h;
-      } else if (h < 0 && w < 0) {
-        h = -h;
-        w = -w;
-        t -= h;
-        l -= w;
-      }
-      rectangleMultiple.height = h;
-      rectangleMultiple.width = w;
-      rectangleMultiple.position.top = t;
-      rectangleMultiple.position.left = l;
-    }
   }
 
   // function getPos(e, res) {
@@ -312,79 +266,53 @@
     };
   }
 
-  // 增加画布节点
-  function addNewNode(node: IElement) {
+  // 增加画布节点 相对于画布的绝对位置
+  function addNewNode(node: INode) {
+    const { backNode } = event;
     let x = mouse.position.x;
     let y = mouse.position.y;
     let nodePos = computeNodePos(x, y);
     x = nodePos.x;
     y = nodePos.y;
 
-    let newNode = Object.assign({}, node) as INode;
+    let newNode = cloneDeep(node) as INode;
+    delete newNode.basicConfig;
     newNode.id = newNode.type + '-' + utils.getId();
-    if (newNode.type === CommonNodeTypeEnum.NOTE) {
-      newNode.x = x - 25;
-      newNode.y = y - 25;
-    } else {
-      newNode.x = x - 40;
-      newNode.y = y - 40;
-    }
-    unref(flowData).nodeList.push(newNode);
+    // 位置矫正
+    newNode.bound = {
+      width: unref(plumb).getNodeBasicConfig(node)?.width || NODE_SIZE,
+      height: unref(plumb).getNodeBasicConfig(node)?.height || NODE_SIZE,
+      x: x - (unref(plumb).getNodeBasicConfig(node)?.width || NODE_SIZE) / 2,
+      y: y - (unref(plumb).getNodeBasicConfig(node)?.height || NODE_SIZE) / 2,
+    };
+    // 设置文字内容
+    newNode.text = {
+      value: unref(plumb).getNodeBasicConfig(node)?.name,
+    };
+    unref(flowData).nodes.push(newNode);
+    emits('update:data', unref(flowData));
     nextTick(() => {
-      __addNode(plumb.value, newNode);
-      emits('update:data', unref(flowData));
-      emits('addNode', newNode);
+      unref(plumb).addNode(newNode);
     });
   }
 
-  // 画布鼠标按下
-  function mousedownHandler(e: MouseEvent) {
-    if (e.button === 0) {
-      currentSelectGroup.value = [];
-      mouse.tempPos = mouse.position;
-      rectangleMultiple.multipling = true;
-    }
-  }
-
-  // 画布鼠标点击松开
-  function mouseupHandler(e: MouseEvent) {
-    judgeSelectedNode();
-    rectangleMultiple.multipling = false;
-    rectangleMultiple.width = 0;
-    rectangleMultiple.height = 0;
-  }
-
-  // 鼠标划框内的节点
-  function judgeSelectedNode() {
-    let ay = rectangleMultiple.position.top;
-    let ax = rectangleMultiple.position.left;
-    let by = ay + rectangleMultiple.height;
-    let bx = ax + rectangleMultiple.width;
-    let halfNodeWidth = 40;
-
-    let nodeList = unref(flowData).nodeList;
-    nodeList.forEach((node: INode) => {
-      if (
-        node.y + halfNodeWidth >= ay &&
-        node.x + halfNodeWidth >= ax &&
-        node.y + halfNodeWidth <= by &&
-        node.x + halfNodeWidth <= bx
-      ) {
-        plumb.value.addToDragSelection(node.id);
-        unref(currentSelectGroup).push(node);
-      }
+  // 画布事件绑定
+  function mutipleDrag() {
+    ds.value = new DragSelect({
+      selectables: document.getElementsByClassName('node-box'),
+      area: document.getElementById('flowContainer'),
+      multiSelectKeys: ['Shift', 'Meta', 'Control'], // special keys that allow multiselection.
     });
-  }
-
-  // 画布鼠标滚轴
-  function scaleContainer(e: WheelEvent) {
-    if (container.scaleFlag) {
-      if (e.deltaY < 0) {
-        zoomIn();
-      } else if (container.scale) {
-        zoomOut();
-      }
-    }
+    unref(ds).subscribe('callback', (e) => {
+      selectContainer();
+      // TODO 有bug
+      // console.log(e.items);
+      // e.items.forEach((item) => {
+      //   let node = unref(flowData)?.nodes.find((n) => n.id === item.id);
+      //   unref(plumb).addToDragSelection(document.getElementById(node.id));
+      //   unref(currentSelectGroup).push(node);
+      // });
+    });
   }
 
   // 画布放大
@@ -395,10 +323,10 @@
       y: container.pos.top,
     });
     container.scale = scale;
-    plumb.value.setZoom(container.scale);
+    unref(plumb).setZoom(container.scale);
     container.pos.left = x;
     container.pos.top = y;
-  }, 20);
+  }, 50);
 
   // 画布缩小
   const zoomOut = throttle(() => {
@@ -408,20 +336,20 @@
       y: container.pos.top,
     });
     container.scale = scale;
-    plumb.value.setZoom(container.scale);
+    unref(plumb).setZoom(container.scale);
     container.pos.left = x;
     container.pos.top = y;
-  }, 20);
+  }, 50);
 
   // 画布自适应
   function zoomFit() {
-    const nodeList = unref(flowData)?.nodeList || [];
-    if (!nodeList.length) {
+    const nodes = unref(flowData)?.nodes || [];
+    if (!nodes.length) {
       return;
     }
-    const { zoomLevel, x, y } = getZoomToFit(nodeList);
+    const { zoomLevel, x, y } = getZoomToFit(nodes);
     container.scale = zoomLevel;
-    plumb.value.setZoom(zoomLevel);
+    unref(plumb).setZoom(zoomLevel);
     container.pos.left = x;
     container.pos.top = y;
   }
@@ -432,12 +360,6 @@
     createContextMenu({
       event: e,
       items: [
-        {
-          handler: () => {
-            flowInfo();
-          },
-          label: '流程图信息',
-        },
         {
           handler: () => {
             paste();
@@ -474,7 +396,7 @@
         },
         {
           handler: () => {
-            deleteNode(node);
+            deleteNode(node.id);
           },
           label: '删除节点',
         },
@@ -482,34 +404,28 @@
     });
   }
 
-  // 流程图信息
-  function flowInfo() {
-    let nodeList = unref(flowData).nodeList;
-    let linkList = unref(flowData).linkList;
-    console.info(
-      '当前流程图中有 ' + nodeList.length + ' 个节点，有 ' + linkList.length + ' 条连线。',
-    );
-  }
-
   // 粘贴
   function paste() {
     let dis = 0;
     clipboard.forEach((node: INode) => {
-      let newNode = Object.assign({}, node);
+      let newNode = cloneDeep(node);
       newNode.id = newNode.type + '-' + utils.getId();
       let nodePos = computeNodePos(mouse.position.x + dis, mouse.position.y + dis);
-      newNode.x = nodePos.x;
-      newNode.y = nodePos.y;
+      newNode.bound.x = nodePos.x;
+      newNode.bound.y = nodePos.y;
       dis += 20;
-      unref(flowData).nodeList.push(newNode);
+      unref(flowData).nodes.push(newNode);
       emits('update:data', unref(flowData));
+      nextTick(() => {
+        unref(plumb).addNode(newNode);
+      });
     });
   }
 
   // 全选
   function selectAll() {
-    unref(flowData).nodeList.forEach((node: INode) => {
-      plumb.value.addToDragSelection(node.id);
+    unref(flowData).nodes.forEach((node: INode) => {
+      plumb.value.addToDragSelection(document.getElementById(node.id));
       unref(currentSelectGroup).push(node);
     });
   }
@@ -523,7 +439,7 @@
   function copyNode() {
     clipboard = [];
     if (unref(currentSelectGroup).length > 0) {
-      clipboard = Object.assign([], unref(currentSelectGroup));
+      clipboard = cloneDeep(unref(currentSelectGroup));
     } else if (unref(currentSelect).id) {
       clipboard.push(unref(currentSelect) as INode);
     }
@@ -541,71 +457,71 @@
   }
 
   // 删除节点
-  function deleteNode(nodes: INode[] | INode) {
-    let nodeList = unref(flowData).nodeList;
-    let linkList = unref(flowData).linkList;
-    let arr: INode[] = Array.isArray(nodes) ? nodes : [nodes];
+  function deleteNode(deleteNodes: string[] | string) {
+    let nodes = unref(flowData).nodes;
+    let arr: string[] = Array.isArray(deleteNodes) ? deleteNodes : [deleteNodes];
 
     status.value = FlowStatusEnum.LOADING;
 
-    arr.forEach((c) => {
-      let conns = getConnectionsByNodeId(c.id);
-      conns.forEach((conn: Recordable) => {
-        linkList.splice(
-          linkList.findIndex(
-            (link: ILink) => link.sourceId === conn.sourceId && link.targetId === conn.targetId,
-          ),
-          1,
-        );
-        plumb.value.deleteConnection(
-          plumb.value.getConnections({
-            source: conn.sourceId,
-            target: conn.targetId,
-          })[0],
-        );
+    handleDelete(arr);
+
+    function handleDelete(arr) {
+      arr.forEach((c) => {
+        let inx = nodes.findIndex((node: INode) => node.id === c);
+        let node = nodes.find((node: INode) => node.id === c);
+        // 删除子链接信息
+        unref(plumb).deleteNode(c);
+        nodes.splice(inx, 1);
+        if (node?.children && node.children.length > 0) {
+          handleDelete(node.children);
+        }
       });
-      let inx = nodeList.findIndex((node: INode) => node.id === c.id);
-      (plumb.value.getEndpoints(c.id) || [])
-        .flat()
-        .forEach((endpoint) => plumb.value?.deleteEndpoint(endpoint));
-      nodeList.splice(inx, 1);
-    });
+    }
+
     status.value = FlowStatusEnum.CREATE;
     emits('update:data', unref(flowData));
     selectContainer();
   }
 
-  // 点击画布
-  function containerHandler() {
-    selectContainer();
-  }
   // 清除画布已选内容
   function selectContainer() {
-    currentSelect.value = {} as INode | ILink;
-    // 开启快捷键
-    emits('onShortcutKey');
+    currentSelect.value = {} as INode | IEdge;
+    currentSelectGroup.value = [];
   }
-  // 是否为多选行为
-  function isMultiple(callback: Fn) {
-    callback(rectangleMultiple.flag);
-  }
-  // 更新组节点信息
+  // 更新多选节点位置
+  // TODO 存在问题
   function updateNodePos() {
-    let nodeList = unref(flowData).nodeList;
+    let nodes = unref(flowData).nodes;
     unref(currentSelectGroup).forEach((node) => {
-      let dom = document.querySelector('#' + node.id) as HTMLElement;
+      let dom = document.getElementById(node.id) as HTMLElement;
       let l = parseInt(dom?.style?.left);
       let t = parseInt(dom?.style?.top);
-      let f = nodeList.find((n: INode) => n.id === node.id);
-      f.x = l;
-      f.y = t;
+      let f = nodes.find((n: INode) => n.id === node.id);
+      f.bound.x = l;
+      f.bound.y = t;
+    });
+  }
+
+  // 更新多选节点位置
+  function updateGroupNodePos(parent: INode) {
+    if (!parent.children || parent.children.length <= 0) return;
+    let nodes = unref(flowData).nodes;
+    let children = parent.children;
+    children.forEach((node) => {
+      let dom = document.getElementById(node) as HTMLElement;
+      let l = parseInt(dom?.style?.left);
+      let t = parseInt(dom?.style?.top);
+      let f = nodes.find((n: INode) => n.id === node);
+      f.bound.x = l + parent.bound.x;
+      f.bound.y = t + parent.bound.y;
+      updateGroupNodePos(f);
     });
   }
   // 更新节点可以状态
   function updateNodeDisable(node: INode) {
     let { disabled } = node;
-    let nodeList = unref(flowData).nodeList;
-    let current = nodeList.find((n: INode) => n.id === node.id);
+    let nodes = unref(flowData).nodes;
+    let current = nodes.find((n: INode) => n.id === node.id);
     current.disabled = !disabled;
   }
 
@@ -614,28 +530,28 @@
     if (unref(currentSelectGroup).length > 1) return;
     if (container.auxiliaryLine.controlFnTimesFlag) {
       let elId = e.el.id;
-      let nodeList = unref(flowData).nodeList;
-      nodeList.forEach((node: INode) => {
+      let nodes = unref(flowData).nodes;
+      nodes.forEach((node: INode) => {
         if (elId !== node.id) {
           let nodeDom = document.getElementById(node.id);
           let dis = flowConfig.value.defaultStyle.showAuxiliaryLineDistance,
             elPos = e.pos,
             elH = e.el.offsetHeight,
             elW = e.el.offsetWidth,
-            disX = elPos[0] - node.x,
-            disY = elPos[1] - node.y;
+            disX = elPos['x'] - node.bound.x,
+            disY = elPos['y'] - node.bound.y;
           if ((disX >= -dis && disX <= dis) || (disX + elW >= -dis && disX + elW <= dis)) {
             container.auxiliaryLine.isShowYLine = true;
-            auxiliaryLinePos.x = node.x + container.pos.left;
-            let nodeMidPointX = node.x + nodeDom!.offsetWidth / 2;
+            auxiliaryLinePos.x = node.bound.x + container.pos.left;
+            let nodeMidPointX = node.bound.x + nodeDom!.offsetWidth / 2;
             if (nodeMidPointX === elPos[0] + elW / 2) {
               auxiliaryLinePos.x = nodeMidPointX + container.pos.left;
             }
           }
           if ((disY >= -dis && disY <= dis) || (disY + elH >= -dis && disY + elH <= dis)) {
             container.auxiliaryLine.isShowXLine = true;
-            auxiliaryLinePos.y = node.y + container.pos.top;
-            let nodeMidPointY = node.y + nodeDom!.offsetHeight / 2;
+            auxiliaryLinePos.y = node.bound.y + container.pos.top;
+            let nodeMidPointY = node.bound.y + nodeDom!.offsetHeight / 2;
             if (nodeMidPointY === elPos[1] + elH / 2) {
               auxiliaryLinePos.y = nodeMidPointY + container.pos.left;
             }
@@ -656,66 +572,219 @@
     }
   }
 
+  function getWaypoints(startPoints, endPoints, segment) {
+    let res = [startPoints];
+    segment.forEach((item) => {
+      let moveX = item.x2 - item.x1;
+      let moveY = item.y2 - item.y1;
+      let lastPoint = res[res.length - 1];
+      res.push({ x: lastPoint.x + moveX, y: lastPoint.y + moveY });
+    });
+    if (JSON.stringify(res[res.length - 1]) !== JSON.stringify(endPoints)) {
+      res.push(endPoints);
+    }
+    return res;
+  }
+
   // 画布初始化
   function initJsPlumb() {
-    plumb.value = jsPlumb.getInstance(unref(flowConfig).jsPlumbInsConfig);
-
-    unref(plumb).bind('beforeDrop', (info: Recordable) => {
-      let sourceId = info.sourceId;
-      let targetId = info.targetId;
-
-      // 不允许自连接
-      // if (sourceId === targetId) return false;
-      let notOnlyLink = flowData.value.linkList.find(
-        (link: ILink) => link.sourceId === sourceId && link.targetId === targetId,
-      );
-      return !notOnlyLink;
+    plumb.value = new plumbRegister({
+      container: document.getElementById('flowContainer'),
+      ...unref(flowConfig).jsPlumbInsConfig,
     });
+    unref(plumb).nodeRegister(commonNodes);
+  }
 
-    unref(plumb).bind('connection', (conn: Recordable) => {
-      let connObj = conn.connection.canvas;
+  // 事件绑定
+  function eventRegister() {
+    unref(plumb).bind(EVENT_CONNECTION_DRAG, () => {
+      unref(ds).stop();
+    });
+    unref(plumb).bind(EVENT_CONNECTION_ABORT, () => {
+      unref(ds).start();
+    });
+    // 建立连接
+    unref(plumb).bind(CONNECTION, (conn: Recordable) => {
+      unref(ds).start();
+      const { connection, sourceEndpoint, targetEndpoint } = conn;
       let o: Recordable = {};
-      let id = '';
-      let label = '';
-      if (status.value === FlowStatusEnum.CREATE || status.value === FlowStatusEnum.MODIFY) {
-        id = 'link-' + utils.getId();
-        label = '';
-      } else if (status.value === FlowStatusEnum.LOADING) {
-        let l = conn.connection.getParameters();
-        id = l.id;
-        label = l.label;
-      }
-      connObj.id = id;
-      o.type = 'link';
-      o.id = id;
-      o.label = label;
-      o.sourceId = conn.sourceId;
-      o.targetId = conn.targetId;
-      o.sourceEndpoint = conn.sourceEndpoint.getParameters().endpoint;
-      o.targetEndpoint = conn.targetEndpoint.getParameters().endpoint;
-      o.cls = {
-        linkType: unref(flowConfig).jsPlumbInsConfig.Connector?.[0],
-        linkColor: unref(flowConfig).jsPlumbInsConfig.PaintStyle?.stroke,
-        linkThickness: unref(flowConfig).jsPlumbInsConfig.PaintStyle?.strokeWidth,
+      let id = connection.parameters.id || 'edge-' + utils.getId();
+      connection.id = id;
+      let startPoint = {
+        x: sourceEndpoint.parameters.x,
+        y: sourceEndpoint.parameters.y,
       };
-      document.querySelector('#' + id)?.addEventListener('contextmenu', (e: Event) => {
-        showLinkContextMenu(e);
-        currentSelect.value = flowData.value.linkList.find((l: ILink) => l.id === id);
+      let endPoint = {
+        x: targetEndpoint.parameters.x,
+        y: targetEndpoint.parameters.y,
+      };
+      if (status.value === FlowStatusEnum.CREATE || status.value === FlowStatusEnum.MODIFY) {
+        // 新建链接
+        o.id = id;
+        o.type = connection.connector.type;
+        // 设置文字位置与内容
+        o.text = {
+          value: '',
+        };
+        o.sourceNodeId = conn.sourceId;
+        o.targetNodeId = conn.targetId;
+        // 计算端点位置
+        o.startPoint = startPoint;
+        o.endPoint = endPoint;
+        o.wayPoints = getWaypoints(startPoint, endPoint, connection.connector.segments);
+        flowData.value.edges.push(o);
+      } else if (status.value === FlowStatusEnum.LOADING) {
+        // 加载链接
+      }
+      // 添加标签
+      unref(plumb).addOverlay(connection, {
+        type: 'Label',
+        options: {
+          id: `${connection.id}__label`,
+          label: connection.parameters.label || '',
+          location: 0.5,
+        },
       });
-
-      document.querySelector('#' + id)?.addEventListener('click', (e: Event) => {
-        e.stopPropagation();
-        currentSelect.value = flowData.value.linkList.find((l: ILink) => l.id === id);
+      unref(plumb).addOverlay(connection, {
+        type: 'Custom',
+        options: {
+          id: `${connection.id}__labelEditor`,
+          create: () => {
+            const d = document.createElement('input');
+            const label = connection.getOverlay(`${connection.id}__label`);
+            d.setAttribute('autofocus', 'true');
+            d.value = label.getLabel();
+            const func = () => {
+              connection.getOverlay(`${connection.id}__labelEditor`).setVisible(false);
+              label.setVisible(true);
+              label.setLabel(d.value);
+              flowData.value.edges.find((edge: IEdge) => edge.id === connection.id).text.value =
+                d.value;
+            };
+            d.addEventListener('blur', func);
+            return d;
+          },
+          location: 0.5,
+        },
       });
-
-      if (status.value !== FlowStatusEnum.LOADING) {
-        delete o.cls;
-        flowData.value.linkList.push(o);
+      connection.getOverlay(`${connection.id}__labelEditor`).setVisible(false);
+    });
+    // 拖拽开始
+    unref(plumb).bind(EVENT_DRAG_START, ({ e, el, dragGroup }) => {
+      if (!currentSelectGroup.value.find((item) => item.id === el.id)) {
+        unref(plumb).clearDragSelection();
+      }
+      unref(ds).stop();
+    });
+    // 拖拽中
+    unref(plumb).bind(EVENT_DRAG_MOVE, (e) => {
+      if (flowConfig.value.defaultStyle.isOpenAuxiliaryLine) {
+        alignForLine(e);
       }
     });
+    // 拖拽结束
+    unref(plumb).bind(EVENT_DRAG_STOP, ({ e, el, elements, payload }) => {
+      unref(ds).start();
+      elements.forEach(({ el, e, pos, dropGroup, originalGroup }) => {
+        let currentNode = flowData.value.nodes.find((n) => n.id === el.id);
+        currentNode.bound.x = pos.x;
+        currentNode.bound.y = pos.y;
+        if (dropGroup) {
+          // 拖拽到组内
+          unref(plumb).addToGroup(dropGroup.id, document.getElementById(currentNode.id));
+        } else if (originalGroup) {
+          // 组内拖拽，计算绝对位置
+          let parent = flowData.value.nodes.find((n) => n.id === originalGroup.elId);
+          currentNode.bound.x += parent.bound.x;
+          currentNode.bound.y += parent.bound.y;
+        }
 
-    unref(plumb).importDefaults({
-      ConnectionsDetachable: unref(flowConfig).jsPlumbConfig.conn.isDetachable,
+        // 更新端点位置
+        let endpoints = unref(plumb).getEndpoints(el);
+        endpoints.forEach((item) => {
+          item.parameters = {
+            ...item.parameters,
+            x: item.endpoint.x + item.endpoint.w / 2,
+            y: item.endpoint.y + item.endpoint.h / 2,
+          };
+        });
+        let edges = getConnectionsByNodeId(currentNode.id);
+        // 更新连线数据
+        edges.forEach((item) => {
+          let currentEdge = flowData.value.edges.find((n) => n.id === item.id);
+          currentEdge.startPoint = {
+            x: item.endpoints[0].parameters.x,
+            y: item.endpoints[0].parameters.y,
+          };
+          currentEdge.endPoint = {
+            x: item.endpoints[1].parameters.x,
+            y: item.endpoints[1].parameters.y,
+          };
+          currentEdge.wayPoints = getWaypoints(
+            currentEdge.startPoint,
+            currentEdge.endPoint,
+            item.connector.segments,
+          );
+        });
+        updateGroupNodePos(currentNode);
+      });
+
+      // 是否为组
+      if (currentSelectGroup.value.length > 1) {
+        // 更新组节点信息
+        unref(currentSelectGroup).forEach((item) => {
+          unref(plumb).addToDragSelection(document.getElementById(item.id));
+        });
+        updateNodePos();
+      }
+      // 隐藏辅助线
+      hideAlignLine();
+    });
+    // 组添加新成员
+    unref(plumb).bind(EVENT_GROUP_MEMBER_ADDED, ({ group, el, pos, sourceGroup }) => {
+      let parent = unref(flowData).nodes.find((item) => item.id === group.elId);
+      parent.children = [...new Set([el.id, ...(parent.children || [])])];
+      // unref(plumb).addToDragGroup(
+      //   { id: group.id, active: true },
+      //   ...group.children.map((i) => i.el),
+      // );
+    });
+    // 组展开
+    unref(plumb).bind(EVENT_GROUP_EXPAND, ({ group }) => {});
+    // 连线断开
+    unref(plumb).bind(EVENT_CONNECTION_DETACHED, ({ connection }) => {
+      const edges = unref(flowData).edges;
+      edges.splice(
+        edges.findIndex((edge: IEdge) => edge.id === connection.id),
+        1,
+      );
+    });
+    // 连线点击
+    unref(plumb).bind(EVENT_CONNECTION_CLICK, (connection) => {
+      event.stopPropagation();
+      currentSelect.value = flowData.value.edges.find(
+        (l: IEdge) => l.id === connection.parameters.id,
+      );
+    });
+    // 连线双击更改标签
+    unref(plumb).bind(EVENT_CONNECTION_DBL_CLICK, (connection) => {
+      event.stopPropagation();
+      const show = function () {
+        connection.getOverlay(`${connection.id}__label`).setVisible(false);
+        connection.getOverlay(`${connection.id}__labelEditor`).setVisible(true);
+      };
+      const hide = function () {
+        connection.getOverlay(`${connection.id}__label`).setVisible(true);
+        connection.getOverlay(`${connection.id}__labelEditor`).setVisible(false);
+        window.removeEventListener('click', hide);
+      };
+      show();
+      window.addEventListener('click', hide);
+    });
+    // 连线右键
+    unref(plumb).bind(EVENT_CONNECTION_CONTEXTMENU, (connection) => {
+      event.stopPropagation();
+      showLinkContextMenu(event, connection);
     });
   }
 
@@ -723,53 +792,48 @@
   function dataInit() {
     if (!unref(plumb)) return;
     status.value = FlowStatusEnum.LOADING;
+    unref(plumb).setSuspendDrawing(true);
     try {
-      if (flowData.value.nodeList && flowData.value.nodeList.length > 0) {
-        flowData.value.nodeList.forEach((item) => {
-          __addNode(plumb.value, item);
+      if (flowData.value.nodes && flowData.value.nodes.length > 0) {
+        flowData.value.nodes.forEach((item) => {
+          unref(plumb).addNode(item);
+        });
+        // have some plb
+        flowData.value.nodes.forEach((item) => {
+          if (item.children && item.children.length > 0) {
+            unref(plumb).addToGroup(
+              item.id,
+              ...item.children.map((i) => document.getElementById(i)),
+            );
+          }
         });
       }
-      if (flowData.value.linkList && flowData.value.linkList.length > 0) {
-        flowData.value.linkList.forEach((item) => {
-          __addLink(
-            plumb.value,
-            { id: item.sourceId, endpoint: item.sourceEndpoint },
-            { id: item.targetId, endpoint: item.targetEndpoint },
-            { id: item.id, label: item.label },
-          );
+
+      if (flowData.value.edges && flowData.value.edges.length > 0) {
+        flowData.value.edges.forEach((item) => {
+          unref(plumb).addEdge(item);
         });
       }
     } catch (e) {
       console.error('渲染失败', e);
     }
-    status.value = FlowStatusEnum.MODIFY;
-    setTimeout(() => {
-      setReadOnly(props.readOnly);
+    nextTick(() => {
+      status.value = FlowStatusEnum.MODIFY;
+      unref(plumb).setSuspendDrawing(false, true);
     });
-  }
-
-  function setReadOnly(flag: boolean) {
-    if (!unref(plumb)) return;
-    unref(plumb).setSuspendDrawing(flag);
-    const connections = unref(plumb).getAllConnections();
-    connections.forEach((connection) => {
-      connection.setDetachable(!flag);
-    });
-    const nodes = unref(flowData).nodeList || [];
-    nodes.forEach((node) => {
-      unref(plumb).setDraggable(document.getElementById(node.id), !flag);
-    });
+    // setTimeout(() => {
+    //   setReadOnly(props.readOnly);
+    // });
   }
 
   // 连接线右键
-  function showLinkContextMenu(e) {
-    e.stopPropagation();
+  function showLinkContextMenu(e, connection) {
     createContextMenu({
       event: e,
       items: [
         {
           handler: () => {
-            deleteLink();
+            deleteLink(connection);
           },
           label: '删除连线',
         },
@@ -806,18 +870,15 @@
   }
 
   // 删除线
-  function deleteLink() {
-    let sourceId = (unref(currentSelect) as ILink)?.sourceId;
-    let targetId = (unref(currentSelect) as ILink)?.targetId;
-    unref(plumb).deleteConnection(
-      unref(plumb).getConnections({
-        source: sourceId,
-        target: targetId,
-      })[0],
-    );
-    let linkList = unref(flowData).linkList;
-    linkList.splice(
-      linkList.findIndex((link: ILink) => link.sourceId === sourceId && link.targetId === targetId),
+  function deleteLink(connection) {
+    let sourceId = connection.sourceId;
+    let targetId = connection.targetId;
+    unref(plumb).deleteConnection(connection);
+    let edges = unref(flowData).edges;
+    edges.splice(
+      edges.findIndex(
+        (edge: IEdge) => edge.sourceNodeId === sourceId && edge.targetNodeId === targetId,
+      ),
       1,
     );
     emits('update:data', unref(flowData));
@@ -825,12 +886,15 @@
   }
 
   onMounted(() => {
-    initJsPlumb();
+    mutipleDrag();
+    ready(() => {
+      initJsPlumb();
+      eventRegister();
+    });
   });
 
   defineExpose({
     container,
-    rectangleMultiple,
     deleteNode,
     zoomOut,
     zoomIn,
@@ -843,16 +907,24 @@
     () => props.select,
     (val) => {
       currentSelect.value = val;
-      // 清除连接线焦点
-      if (tempLinkId !== '') {
-        document.querySelector('#' + tempLinkId)?.classList.remove('link-active');
-        tempLinkId = '';
-      }
-      // 设置连接线焦点
-      if (unref(currentSelect).type === 'link') {
-        tempLinkId = unref(currentSelect).id;
-        document.querySelector('#' + unref(currentSelect).id)?.classList.add('link-active');
-      }
+      // if (tempLinkId !== '') {
+      //   // 清除连接线焦点
+      //   let connection = unref(plumb).getConnections({
+      //     target: unref(flowData).edges.find((i) => i.id === tempLinkId)?.targetId,
+      //     source: unref(flowData).edges.find((i) => i.id === tempLinkId)?.sourceId,
+      //   })[0];
+      //   if (connection) connection.removeClass('link-active');
+      //   tempLinkId = '';
+      // }
+      // // 设置连接线焦点
+      // if (unref(currentSelect).type === 'link') {
+      //   tempLinkId = unref(currentSelect).id;
+      //   let connection = unref(plumb).getConnections({
+      //     target: unref(flowData).edges.find((i) => i.id === tempLinkId)?.targetId,
+      //     source: unref(flowData).edges.find((i) => i.id === tempLinkId)?.sourceId,
+      //   })[0];
+      //   if (connection) connection.addClass('link-active');
+      // }
     },
     { deep: true },
   );
@@ -884,7 +956,7 @@
   watch(
     () => props.readOnly,
     (v) => {
-      setReadOnly(v);
+      unref(plumb).setReadOnly(v);
     },
   );
 </script>

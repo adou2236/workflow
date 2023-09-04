@@ -2,7 +2,7 @@ import { idType as flowIdType } from '@/config/flow';
 import { IdTypeEnum } from '@/type/enums';
 import { INode, IZoomConfig } from '@/type';
 
-const NODE_SIZE = 80;
+const NODE_SIZE = 40;
 export const utils = {
   seqNo: 1,
   consoleLog: function (strArr) {

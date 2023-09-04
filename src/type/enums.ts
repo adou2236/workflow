@@ -1,27 +1,16 @@
-export enum ToolsTypeEnum {
-  DRAG = 'drag',
-  CONNECTION = 'connection',
+export enum NodeType {
+  START_EVENT = 'bpmn:startEvent', //开始节点
+  TIMER_EVENT_DEFINITION = 'bpmn:timerEventDefinition', //事件开始节点
+  END_EVENT = 'bpmn:endEvent', //结束节点
+  USER_TASK = 'bpmn:userTask', //用户任务
+  SERVER_TASK = 'bpmn:serviceTask', //服务任务
+  EXCLUSIVE_GATEWAY = 'bpmn:exclusiveGateway', //排他网关
+  INCLUSIVE_GATEWAY = 'bpmn:inclusiveGateway', //包容网关
+  PARALLEL_GATEWAY = 'bpmn:parallelGateway', //并行网关
+  SUB_PROCESS = 'bpmn:subProcess', //并行网关
 }
 
-export enum NodeTypeEnum {
-  Common_Node_Type = 'CommonNodeType',
-  High_Node_Type = 'HighNodeType',
-  Lane_Node_Type = 'LaneNodeType',
-}
-
-export enum CommonNodeTypeEnum {
-  COMMON = 'common',
-  NOTE = 'note',
-}
-
-export enum HighNodeTypeEnum {
-  CHILD_FLOW = 'child_flow',
-}
-
-export enum LaneNodeTypeEnum {
-  X_LANE = 'x_lane',
-  Y_LANE = 'y_lane',
-}
+export enum EdgeType {}
 
 export enum FlowStatusEnum {
   CREATE = '0',

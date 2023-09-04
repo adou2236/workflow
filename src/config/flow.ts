@@ -1,6 +1,6 @@
-import { Defaults } from 'jsplumb';
 import { IdTypeEnum } from '@/type/enums';
 import variable from '@/assets/style/variable.module.scss';
+import { BrowserJsPlumbDefaults } from '@jsplumb/browser-ui';
 
 export const settingConfig = {
   containerScale: {
@@ -8,7 +8,7 @@ export const settingConfig = {
     onceEnlarge: 0.1,
   },
   cls: {
-    linkType: 'Bezier',
+    linkType: 'Flowchart',
     linkColor: variable['rect-color'],
     linkThickness: 2,
   },
@@ -17,43 +17,6 @@ export const settingConfig = {
     horizontal: 100,
     vertical: 100,
     movePx: 5,
-  },
-};
-
-const jsPlumbInsConfig: Defaults = {
-  Connector: [
-    settingConfig.cls.linkType,
-    {
-      gap: 5,
-      cornerRadius: 8,
-      alwaysRespectStubs: true,
-    },
-  ],
-  ConnectionOverlays: [
-    [
-      'Arrow',
-      {
-        width: 10,
-        length: 10,
-        location: 1,
-      },
-    ],
-  ],
-  PaintStyle: {
-    stroke: settingConfig.cls.linkColor,
-    strokeWidth: settingConfig.cls.linkThickness,
-  },
-  HoverPaintStyle: {
-    stroke: variable['primary-color'],
-    strokeWidth: 3,
-  },
-  EndpointStyle: {
-    fill: '#456',
-    stroke: '#2a2929',
-    strokeWidth: 1,
-  },
-  EndpointHoverStyle: {
-    fill: 'pink',
   },
 };
 
@@ -81,13 +44,6 @@ const jsPlumbConfig = {
     target: true,
     maxConnections: -1,
     endpoint: 'Rectangle',
-    paintStyle: {
-      width: 8,
-      height: 12,
-      fill: '#F00',
-      stroke: '#F00',
-      lineWidth: 0,
-    },
     anchor: ['Left'],
   },
 };
@@ -95,7 +51,7 @@ const jsPlumbConfig = {
 const defaultStyle = {
   showGrid: true,
   dragOpacity: 0.7,
-  alignGridPX: [5, 5], // 最小步长
+  alignGridPX: [20, 20], // 最小步长
   alignSpacing: {
     horizontal: settingConfig.other.horizontal,
     vertical: settingConfig.other.vertical,
@@ -112,6 +68,48 @@ const defaultStyle = {
   showAuxiliaryLineDistance: 20,
   movePx: settingConfig.other.movePx,
   photoBlankDistance: 200,
+};
+
+const jsPlumbInsConfig: BrowserJsPlumbDefaults = {
+  dragOptions: {
+    grid: { w: 10, h: 10 },
+  },
+  connector: {
+    type: settingConfig.cls.linkType,
+    options: {
+      cornerRadius: 5,
+    },
+  },
+  reattachConnections: true,
+  connectionsDetachable: true,
+  connectionOverlays: [
+    {
+      type: 'Arrow',
+      options: {
+        width: 10,
+        length: 10,
+        location: 1,
+      },
+    },
+  ],
+  paintStyle: {
+    stroke: settingConfig.cls.linkColor,
+    strokeWidth: settingConfig.cls.linkThickness,
+  },
+  hoverPaintStyle: {
+    stroke: variable['primary-color'],
+    strokeWidth: 5,
+  },
+  endpointStyle: {
+    strokeWidth: 1,
+    fill: 'white',
+    stroke: 'black',
+  },
+  endpointHoverStyle: {
+    strokeWidth: 1,
+    fill: variable['primary-color'],
+    stroke: variable['primary-color'],
+  },
 };
 
 export const flowConfig = {

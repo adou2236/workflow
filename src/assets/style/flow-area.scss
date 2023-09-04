@@ -5,6 +5,13 @@
   overflow: hidden;
   position: relative;
 
+  .jtk-connector { z-index:10001; }
+  .jtk-endpoint { z-index:10000; }
+  .jtk-overlay { z-index:10002; }
+  .jtk-group-collapsed [data-jtk-managed] {
+    display:none;
+  }
+
   &__lineX {
     position: absolute;
     border: 0.5px solid $primary-color;
@@ -25,16 +32,8 @@
     position: relative;
 
     &.grid {
-      background: url('../images/grid-bg.jpg') repeat left top;
-      background-size: 60px 60px;
-    }
-
-    &.canDrag {
-      cursor: grab;
-    }
-
-    &.canMultiple {
-      cursor: url('../images/multip-pointer.png'), default;
+      background-image: url('../images/grid-bg.jpg');
+      background-size: 40px 40px;
     }
   }
 

@@ -6,20 +6,13 @@
   align-items: center;
   justify-content: center;
   position: absolute;
-  height: 80px;
-  width: 80px;
-  line-height: 80px;
-  text-align: center;
-  border: 2px solid var(--el-border-color-dark);
   border-radius: 5px;
-  background-color: $common-node-bg;
+  background-color: transparent;
   white-space: nowrap;
-  box-shadow: 2px 2px 5px #ddd;
-
-
+  box-sizing: border-box;
   &.active {
-    outline: 4px solid $common-node-active;
-    outline-offset: 0;
+    outline: 2px solid $common-node-active;
+    outline-offset: 4px;
   }
 
   &.trigger {
@@ -102,7 +95,7 @@
   top: -25px;
   left: 50%;
   transform: translateX(-50%);
-  width: 100px;
+  width: 100%;
   justify-content: center;
   display: flex;
   opacity: 0;
@@ -113,25 +106,26 @@
 }
 .node-description {
   position: absolute;
-  top: 80px;
+  top: calc(100% + 7px);
+  font-size: 12px;
   left: 50%;
   transform: translateX(-50%);
-  line-height: 1.5;
   text-align: center;
   cursor: default;
-  padding: 8px;
   width: 100px;
   pointer-events: none; // prevent container from being draggable
 
+  .node-name {
+    display: flex;
+    justify-content: center;
+  }
+
   .node-name > p {
-    text-overflow: ellipsis;
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-    overflow: hidden;
     overflow-wrap: anywhere;
+    white-space: normal;
+    word-break: break-all;
     font-weight: var(--el-link-font-weight);
-    line-height: var(--el-font-line-height-primary);
+    line-height: 1;
     margin: 0;
   }
 }
@@ -142,18 +136,22 @@
   }
 }
 .flow-area__container:not(.readOnly) .node-box{
-  &:hover{
-    .node-tools{
+  &:hover > .node-tools{
       opacity: 1;
       pointer-events: auto;
     }
-  }
   &:not(.disabled):hover {
-    background-color: $common-node-bg-hover;
     z-index: 2;
     .node-setting{
       visibility: visible;
     }
+  }
+}
+.dot-endpoint{
+  cursor: crosshair;
+  //transform: translate(-50%, -50%);
+  & > *:hover{
+    fill: $primary-color;
   }
 }
 

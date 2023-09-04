@@ -1,67 +1,54 @@
-import {
-  ToolsTypeEnum,
-  NodeTypeEnum,
-  CommonNodeTypeEnum,
-  HighNodeTypeEnum,
-  LaneNodeTypeEnum,
-  FLOW_TYPE,
-} from './enums';
+import { NodeType } from './enums';
 
 import { settingConfig } from '@/config/flow';
 
-export type NodesType = CommonNodeTypeEnum | HighNodeTypeEnum | LaneNodeTypeEnum;
+export type NodesType = NodeType;
 
-export interface IDragInfo extends IElement {
-  belongTo: Nullable<NodeTypeEnum>;
-}
-
-export interface ITool {
-  type: ToolsTypeEnum;
-  nodeName: string;
-  icon: string;
-}
-
-export interface IElement {
-  type: NodesType;
-  nodeName: string; //节点唯一名称
-  flowType: FLOW_TYPE; // 节点角色 触发器or响应器
-  icon: string; // string or http
-  inputs: string[];
-  outputs: string[];
-  args?: string[]; // 模拟形参
-  parameters?: {
-    options: any;
-    rule: any;
-  }; // form-create内容
-}
-
-export interface INode extends IElement {
-  id: string;
+export interface Point {
   x: number;
   y: number;
-  displayName?: string; //节点展示名称
-  description?: string; //节点描述
-  disabled?: boolean; //是否禁用
-  value?: object; // 节点内表单
 }
 
-export interface ILink {
-  type: string;
+export interface Bound extends Point {
+  width: number;
+  height: number;
+}
+
+export interface Text extends Bound {
+  value: string;
+}
+
+export interface OriginNode {
+  type: NodeType;
+  basicConfig?: Record<string, any>; // 基本设置，不参与保存
+  name?: string;
+  definition?: OriginNode;
+  properties?: Record<string, unknown>;
+}
+
+export interface INode extends OriginNode {
   id: string;
-  sourceId?: string;
-  targetId?: string;
-  label: string;
-  cls: {
-    linkType: string;
-    linkColor: string;
-    linkThickness: number;
-  };
+  bound: Bound;
+  text?: Text;
+  children: string[];
 }
 
-export interface IShortcutKey {
-  code: string;
-  codeName: string;
-  shortcutName: string;
+export interface IEdge {
+  id: string;
+  type: string;
+  sourceNodeId: string;
+  targetNodeId: string;
+  startPoint: Point;
+  endPoint: Point;
+  text?: Text;
+  wayPoints?: Point[];
+  properties?: Record<string, unknown>;
+}
+
+export interface IProcess {
+  id: string;
+  nodes: INode[];
+  edges: IEdge[];
 }
 
 export interface IZoomConfig {

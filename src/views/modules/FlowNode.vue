@@ -11,19 +11,20 @@
       node.flowType,
     ]"
     :style="{
-      top: node.y + 'px',
-      left: node.x + 'px',
+      width: node.bound.width + 'px',
+      height: node.bound.height + 'px',
       cursor: 'move',
     }"
-    @click.stop="selectNode"
+    :data-x="node.bound.x"
+    :data-y="node.bound.y"
     @contextmenu.stop="showNodeContextMenu(node)"
   >
     <div class="node-tools">
-      <el-icon @click="handleDisable(node)">
+      <el-icon @click="updateNodeDisable(node)">
         <VideoPlay v-if="node.disabled" />
         <VideoPause v-else />
       </el-icon>
-      <el-icon @click="handleDelete(node)">
+      <el-icon @click="nodeDelete(node.id)">
         <Delete />
       </el-icon>
     </div>
@@ -34,14 +35,23 @@
         </el-icon>
       </el-tooltip>
     </div>
-    <div class="node-setting">
-      <el-icon @click="setNodeParams(node)"><Tools /></el-icon>
-    </div>
-    <img class="node-icon" src="http://dummyimage.com/100x100" />
-    <div class="node-description">
-      <div class="node-name" :title="node.displayName">
-        <p data-test-id="canvas-node-box-title">
-          {{ node.displayName }}
+    <!--    <div class="node-setting">-->
+    <!--      <el-icon @click="setNodeParams(node)"><Tools /></el-icon>-->
+    <!--    </div>-->
+    <component
+      v-if="plumb"
+      :is="Nodes[node.type]"
+      :node="node"
+      :plumb="plumb"
+      :style="`font-size: ${Math.min(node.bound.width, node.bound.height)}px`"
+    >
+      <slot></slot>
+    </component>
+    <div class="node-description" :title="node.text.value">
+      {{ node.bound }}
+      <div class="node-name" :title="node.text.value">
+        <p data-test-id="canvas-node-box-title" class="node-text">
+          {{ node.text.value }}
         </p>
         <p v-if="node.disabled">(禁用)</p>
       </div>
@@ -50,24 +60,14 @@
 </template>
 
 <script lang="ts" setup>
-  import {
-    ref,
-    unref,
-    watch,
-    onMounted,
-    PropType,
-    reactive,
-    nextTick,
-    onUpdated,
-    onBeforeUnmount,
-  } from 'vue';
-  import { ToolsTypeEnum } from '@/type/enums';
-  import { INode, ILink, NodesType } from '@/type';
+  import { ref, unref, watch, onMounted, PropType, reactive, computed, onBeforeUnmount } from 'vue';
+  import { INode, IEdge } from '@/type';
   import { VideoPlay } from '@element-plus/icons-vue';
+  import Nodes from '../baseNodes/index';
 
   const props = defineProps({
     select: {
-      type: Object as PropType<INode | ILink>,
+      type: Object as PropType<INode | IEdge>,
       default: () => ({}),
     },
     selectGroup: {
@@ -81,6 +81,10 @@
     node: {
       type: Object as PropType<INode>,
       default: () => ({}),
+    },
+    nodes: {
+      type: Array as PropType<INode[]>,
+      default: () => [],
     },
     plumb: {
       type: Object,
@@ -100,9 +104,6 @@
     'isMultiple',
     'showNodeContextMenu',
   ]);
-
-  // 流程配置
-  const flowConfig = reactive(props.config);
 
   // 当前节点信息
   const currentNode = reactive(props.node);
@@ -126,59 +127,10 @@
     error: 'CircleCloseFilled',
   });
 
-  // 初始节点拖拽
-  function registerNode() {
-    props.plumb!.draggable(currentNode.id, {
-      containment: 'parent',
-      handle: (e, el: HTMLElement) => {
-        // 判断节点类型
-        let possibles = el?.parentNode?.querySelectorAll('.node-box') ?? [];
-
-        for (let i = 0; i < possibles?.length; i++) {
-          if (possibles[i] === el || e?.target?.className === 'lane-text') return true;
-        }
-
-        return false;
-      },
-      grid: flowConfig.defaultStyle.alignGridPX,
-      drag: (e) => {
-        if (flowConfig.defaultStyle.isOpenAuxiliaryLine) {
-          emits('alignForLine', e);
-        }
-      },
-      stop: (e) => {
-        currentNode.x = e.pos[0];
-        currentNode.y = e.pos[1];
-
-        // 是否为组
-        if (currentSelectGroup.value.length > 1) {
-          // 更新组节点信息
-          emits('updateNodePos');
-        }
-        // 隐藏辅助线
-        emits('hideAlignLine');
-      },
-    });
-
-    currentSelect.value = currentNode;
-    currentSelectGroup.value = [];
-  }
-
   // 点击节点
   function selectNode() {
     currentSelect.value = currentNode;
     currentSelectGroup.value = [];
-    // emits('isMultiple', (flag: boolean) => {
-    //   if (!flag) {
-    //     currentSelectGroup.value = [];
-    //   } else {
-    //     let f = unref(currentSelectGroup).find((s) => s.id === currentNode.id);
-    //     if (f) {
-    //       props.plumb!.addToDragSelection(currentNode.id);
-    //       currentSelectGroup.value.push(currentNode);
-    //     }
-    //   }
-    // });
   }
   // 节点右键
   function showNodeContextMenu(node) {
@@ -195,13 +147,13 @@
     return !!f;
   }
   // 禁用节点
-  function handleDisable(node) {
+  function updateNodeDisable(node) {
     emits('updateNodeDisable', node);
   }
 
   // 删除节点
-  function handleDelete(node) {
-    emits('nodeDelete', node);
+  function nodeDelete(id) {
+    emits('nodeDelete', id);
   }
 
   // 设置节点内属性
@@ -238,19 +190,19 @@
     },
   );
 
-  watch(
-    () => props.plumb,
-    (v) => {
-      if (v) {
-        nextTick(() => {
-          registerNode();
-        });
-      }
-    },
-    {
-      immediate: true,
-    },
-  );
+  // watch(
+  //   () => props.plumb,
+  //   (v) => {
+  //     if (v) {
+  //       nextTick(() => {
+  //         // registerNode();
+  //       });
+  //     }
+  //   },
+  //   {
+  //     immediate: true,
+  //   },
+  // );
   let observer = ref<MutationObserver | null>(null);
 
   function setAttrs(records) {

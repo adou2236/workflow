@@ -7,12 +7,12 @@
 <script lang="ts" setup>
   import FlowElementList from './FlowElementList.vue';
   import { commonNodes } from '@/config/nodes';
-  import { IElement } from '@/type/index';
+  import { OriginNode } from '@/type';
 
   const emits = defineEmits(['setDragInfo']);
 
   // 设置dragInfo
-  function setDragInfo(info: IElement) {
+  function setDragInfo(info: OriginNode) {
     emits('setDragInfo', info);
   }
 </script>

@@ -41,11 +41,11 @@ function install(global) {
  */
 function clear(rest: any): void {
   const { flowData, plumb } = rest;
-  unref(flowData).nodeList.forEach((node: INode) => {
+  unref(flowData).nodes.forEach((node: INode) => {
     unref(plumb).remove(node.id);
   });
-  unref(flowData).nodeList = [];
-  unref(flowData).linkList = [];
+  unref(flowData).nodes = [];
+  unref(flowData).edges = [];
 }
 
 /**
