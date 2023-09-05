@@ -5,10 +5,6 @@ declare const _default: import("vue").DefineComponent<{
         type: PropType<INode | ILink>;
         default: () => {};
     };
-    selectGroup: {
-        type: PropType<INode[]>;
-        default: () => never[];
-    };
     config: {
         type: ObjectConstructor;
         default: () => {};
@@ -21,14 +17,10 @@ declare const _default: import("vue").DefineComponent<{
         type: ObjectConstructor;
         default: () => undefined;
     };
-}, {}, unknown, {}, {}, import("vue").ComponentOptionsMixin, import("vue").ComponentOptionsMixin, ("update:select" | "update:selectGroup" | "alignForLine" | "updateNodePos" | "updateNodeDisable" | "nodeDelete" | "setNodeParams" | "hideAlignLine" | "isMultiple" | "showNodeContextMenu")[], "update:select" | "update:selectGroup" | "alignForLine" | "updateNodePos" | "updateNodeDisable" | "nodeDelete" | "setNodeParams" | "hideAlignLine" | "isMultiple" | "showNodeContextMenu", import("vue").VNodeProps & import("vue").AllowedComponentProps & import("vue").ComponentCustomProps, Readonly<import("vue").ExtractPropTypes<{
+}, {}, unknown, {}, {}, import("vue").ComponentOptionsMixin, import("vue").ComponentOptionsMixin, ("update:select" | "alignForLine" | "updateNodePos" | "updateNodeDisable" | "nodeDelete" | "setNodeParams" | "hideAlignLine" | "isMultiple" | "showNodeContextMenu")[], "update:select" | "alignForLine" | "updateNodePos" | "updateNodeDisable" | "nodeDelete" | "setNodeParams" | "hideAlignLine" | "isMultiple" | "showNodeContextMenu", import("vue").VNodeProps & import("vue").AllowedComponentProps & import("vue").ComponentCustomProps, Readonly<import("vue").ExtractPropTypes<{
     select: {
         type: PropType<INode | ILink>;
         default: () => {};
-    };
-    selectGroup: {
-        type: PropType<INode[]>;
-        default: () => never[];
     };
     config: {
         type: ObjectConstructor;
@@ -44,7 +36,6 @@ declare const _default: import("vue").DefineComponent<{
     };
 }>> & {
     "onUpdate:select"?: ((...args: any[]) => any) | undefined;
-    "onUpdate:selectGroup"?: ((...args: any[]) => any) | undefined;
     onAlignForLine?: ((...args: any[]) => any) | undefined;
     onUpdateNodePos?: ((...args: any[]) => any) | undefined;
     onUpdateNodeDisable?: ((...args: any[]) => any) | undefined;
@@ -55,7 +46,6 @@ declare const _default: import("vue").DefineComponent<{
     onShowNodeContextMenu?: ((...args: any[]) => any) | undefined;
 }, {
     select: INode | ILink;
-    selectGroup: INode[];
     config: Record<string, any>;
     node: INode;
     plumb: Record<string, any>;

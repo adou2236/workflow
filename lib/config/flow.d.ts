@@ -19,40 +19,6 @@ export declare const settingConfig: {
 };
 export declare const flowConfig: {
     jsPlumbInsConfig: Defaults;
-    jsPlumbConfig: {
-        anchor: {
-            default: string[];
-        };
-        conn: {
-            isDetachable: boolean;
-        };
-        makeSourceConfig: {
-            filter: string;
-            filterExclude: boolean;
-            source: boolean;
-            target: boolean;
-            maxConnections: number;
-            endpoint: string;
-            connectionsDirected: boolean;
-            anchor: string[];
-        };
-        makeTargetConfig: {
-            filter: string;
-            filterExclude: boolean;
-            source: boolean;
-            target: boolean;
-            maxConnections: number;
-            endpoint: string;
-            paintStyle: {
-                width: number;
-                height: number;
-                fill: string;
-                stroke: string;
-                lineWidth: number;
-            };
-            anchor: string[];
-        };
-    };
     defaultStyle: {
         showGrid: boolean;
         dragOpacity: number;

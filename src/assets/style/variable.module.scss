@@ -7,7 +7,9 @@ $warning-color: var(--el-color-warning);
 $info-color: var(--el-color-info);
 $error-color: var(--el-color-error);
 $rect-color:  var(--el-text-color-regular);
+$line-color:  var(--el-color-primary);
 :export {
   primary-color: $primary-color;
-  rect-color: $rect-color
+  rect-color: $rect-color;
+  line-color: $line-color
 }

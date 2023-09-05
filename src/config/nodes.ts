@@ -1,4 +1,4 @@
-import { CommonNodeTypeEnum, FLOW_TYPE } from '@/type/enums';
+import { CommonNodeTypeEnum } from '@/type/enums';
 import { IElement } from '@/type';
 
 export const commonNodes: IElement[] = [
@@ -6,10 +6,7 @@ export const commonNodes: IElement[] = [
     type: CommonNodeTypeEnum.COMMON,
     nodeName: '触发器0',
     icon: 'Bell',
-    inputs: [],
-    outputs: ['output1'],
     args: ['key', 'name'],
-    flowType: FLOW_TYPE.TRIGGER,
     parameters: {
       options: {
         form: {
@@ -71,10 +68,7 @@ export const commonNodes: IElement[] = [
     type: CommonNodeTypeEnum.COMMON,
     nodeName: '触发器1',
     icon: 'Bell',
-    inputs: [],
-    outputs: ['output1'],
     args: ['key', 'name'],
-    flowType: FLOW_TYPE.TRIGGER,
     parameters: {
       options: {
         form: {
@@ -136,10 +130,7 @@ export const commonNodes: IElement[] = [
     type: CommonNodeTypeEnum.COMMON,
     nodeName: '触发器2',
     icon: 'Bell',
-    inputs: [],
-    outputs: ['output1'],
     args: ['key', 'name'],
-    flowType: FLOW_TYPE.TRIGGER,
     parameters: {
       options: {
         form: {
@@ -201,10 +192,7 @@ export const commonNodes: IElement[] = [
     type: CommonNodeTypeEnum.COMMON,
     nodeName: '动作1',
     icon: 'House',
-    inputs: ['input1'],
-    outputs: ['output1'],
     args: ['key', 'name'],
-    flowType: FLOW_TYPE.ACTION,
     parameters: {
       options: {
         form: {
@@ -266,10 +254,7 @@ export const commonNodes: IElement[] = [
     type: CommonNodeTypeEnum.COMMON,
     nodeName: '动作2',
     icon: 'House',
-    inputs: ['input1'],
-    outputs: ['output1'],
     args: ['key', 'name'],
-    flowType: FLOW_TYPE.ACTION,
     parameters: {
       options: {
         form: {
@@ -331,10 +316,6 @@ export const commonNodes: IElement[] = [
     type: CommonNodeTypeEnum.COMMON,
     nodeName: '逻辑判断',
     icon: 'House',
-    inputs: ['input1'],
-    outputs: ['true', 'false'],
-    args: ['key', 'name'],
-    flowType: FLOW_TYPE.ACTION,
     parameters: {
       options: {
         form: {

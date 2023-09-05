@@ -2,6 +2,7 @@
   <div
     class="flow-area"
     id="flow-area-root"
+    :style="backgroundStyle"
     @dragover="handleDragover"
     @drop="handleDrop"
     @wheel="handleScroll"
@@ -25,15 +26,11 @@
       class="flow-area__container"
       :class="{
         grid: flowConfig.defaultStyle.showGrid,
-        canDrag: container.dragFlag,
-        canMultiple: rectangleMultiple.flag,
         readOnly: props.readOnly,
       }"
       :style="gridStyle"
       @click="containerHandler"
-      @mousedown="mousedownHandler"
       @mousemove="mousemoveHandler"
-      @mouseup="mouseupHandler"
       @mousewheel="scaleContainer"
       @DOMMouseScroll="scaleContainer"
       @contextmenu="showContainerContextMenu"
@@ -45,31 +42,13 @@
         :plumb="plumb"
         :config="flowConfig"
         v-model:select="currentSelect"
-        v-model:selectGroup="currentSelectGroup"
         @showNodeContextMenu="showNodeContextMenu"
-        @isMultiple="isMultiple"
-        @updateNodePos="updateNodePos"
         @updateNodeDisable="updateNodeDisable"
         @nodeDelete="deleteNode"
         @setNodeParams="(v) => emits('setNodeParams', v)"
         @alignForLine="alignForLine"
         @hideAlignLine="hideAlignLine"
       />
-      <div
-        class="flow-area__multiple"
-        v-if="
-          rectangleMultiple.flag &&
-          rectangleMultiple.multipling &&
-          rectangleMultiple.width &&
-          rectangleMultiple.height
-        "
-        :style="{
-          top: rectangleMultiple.position.top + 'px',
-          left: rectangleMultiple.position.left + 'px',
-          width: rectangleMultiple.width + 'px',
-          height: rectangleMultiple.height + 'px',
-        }"
-      ></div>
     </div>
   </div>
 </template>
@@ -82,7 +61,6 @@
   import { useContextMenu } from '@/hooks/useContextMenu';
   import { CommonNodeTypeEnum, FlowStatusEnum } from '@/type/enums';
   import { INode, ILink, IElement } from '@/type';
-  import { commonNodes } from '@/config/nodes';
   import { jsPlumb } from 'jsplumb';
   import funcInstall from '@/utils';
   import { __addNode, __addLink } from '@/utils/nodeBase';
@@ -102,10 +80,6 @@
       type: Object as PropType<INode | ILink>,
       default: () => ({}),
     },
-    selectGroup: {
-      type: Array as PropType<INode[]>,
-      default: () => [],
-    },
     readOnly: {
       type: Boolean,
       default: false,
@@ -116,9 +90,7 @@
     'addNode',
     'setNodeParams',
     'onShortcutKey',
-    'saveFlow',
     'update:select',
-    'update:selectGroup',
     'update:data',
   ]);
 
@@ -126,8 +98,6 @@
 
   // 流程实例
   const plumb = ref();
-
-  const initDone = ref(false);
 
   // 流程当前状态
   const status = ref('3');
@@ -156,13 +126,10 @@
   // 当前选择的节点
   const currentSelect = ref(props.select);
 
-  // 当前选择的节点组
-  const currentSelectGroup = ref(props.selectGroup);
-
   const container = reactive({
     pos: {
-      top: -5000,
-      left: -5000,
+      top: 0,
+      left: 0,
     },
     dragFlag: false,
     draging: false,
@@ -199,18 +166,6 @@
     },
   });
 
-  // 鼠标划框多选
-  const rectangleMultiple = reactive({
-    flag: true, // 是否按了shift键
-    multipling: false,
-    position: {
-      top: 0,
-      left: 0,
-    },
-    height: 0,
-    width: 0,
-  });
-
   // 当前聚焦的连接线ID
   let tempLinkId = '';
 
@@ -226,25 +181,16 @@
     };
   });
 
+  const backgroundStyle = computed(() => {
+    return {
+      backgroundPosition: `${container.pos.left}px ${container.pos.top}px`,
+      backgroundSize: `${container.scale * 60}px`,
+    };
+  });
+
   function handleDragover(e: MouseEvent) {
     e.preventDefault();
     mousemoveHandler(e);
-  }
-
-  // 查找相关节点
-  function findNodeConfig(dragInfo: IElement) {
-    let node: IElement | undefined;
-    const { nodeName } = dragInfo;
-
-    node = commonNodes.find((n) => n.nodeName === nodeName);
-
-    if (!node) {
-      console.error('未知的节点类型！');
-      return;
-    }
-
-    // 增加节点
-    addNewNode(dragInfo);
   }
 
   // 组件拖拽入画布
@@ -268,37 +214,7 @@
       x: offsetX,
       y: offsetY,
     };
-    if (rectangleMultiple.multipling) {
-      let h = mouse.position.y - mouse.tempPos.y;
-      let w = mouse.position.x - mouse.tempPos.x;
-      let t = mouse.tempPos.y;
-      let l = mouse.tempPos.x;
-      if (h >= 0 && w < 0) {
-        w = -w;
-        l -= w;
-      } else if (h < 0 && w >= 0) {
-        h = -h;
-        t -= h;
-      } else if (h < 0 && w < 0) {
-        h = -h;
-        w = -w;
-        t -= h;
-        l -= w;
-      }
-      rectangleMultiple.height = h;
-      rectangleMultiple.width = w;
-      rectangleMultiple.position.top = t;
-      rectangleMultiple.position.left = l;
-    }
   }
-
-  // function getPos(e, res) {
-  //   if (e.parentNode.id === 'flowContainer') {
-  //     return res;
-  //   } else {
-  //     return getPos(e.parent);
-  //   }
-  // }
 
   // x, y取整计算
   function computeNodePos(x: number, y: number) {
@@ -334,45 +250,6 @@
       __addNode(plumb.value, newNode);
       emits('update:data', unref(flowData));
       emits('addNode', newNode);
-    });
-  }
-
-  // 画布鼠标按下
-  function mousedownHandler(e: MouseEvent) {
-    if (e.button === 0) {
-      currentSelectGroup.value = [];
-      mouse.tempPos = mouse.position;
-      rectangleMultiple.multipling = true;
-    }
-  }
-
-  // 画布鼠标点击松开
-  function mouseupHandler(e: MouseEvent) {
-    judgeSelectedNode();
-    rectangleMultiple.multipling = false;
-    rectangleMultiple.width = 0;
-    rectangleMultiple.height = 0;
-  }
-
-  // 鼠标划框内的节点
-  function judgeSelectedNode() {
-    let ay = rectangleMultiple.position.top;
-    let ax = rectangleMultiple.position.left;
-    let by = ay + rectangleMultiple.height;
-    let bx = ax + rectangleMultiple.width;
-    let halfNodeWidth = 40;
-
-    let nodeList = unref(flowData).nodeList;
-    nodeList.forEach((node: INode) => {
-      if (
-        node.y + halfNodeWidth >= ay &&
-        node.x + halfNodeWidth >= ax &&
-        node.y + halfNodeWidth <= by &&
-        node.x + halfNodeWidth <= bx
-      ) {
-        plumb.value.addToDragSelection(node.id);
-        unref(currentSelectGroup).push(node);
-      }
     });
   }
 
@@ -434,27 +311,9 @@
       items: [
         {
           handler: () => {
-            flowInfo();
-          },
-          label: '流程图信息',
-        },
-        {
-          handler: () => {
             paste();
           },
           label: '粘贴',
-        },
-        {
-          handler: () => {
-            selectAll();
-          },
-          label: '全选',
-        },
-        {
-          handler: () => {
-            saveFlow();
-          },
-          label: '保存流程',
         },
       ],
     });
@@ -482,15 +341,6 @@
     });
   }
 
-  // 流程图信息
-  function flowInfo() {
-    let nodeList = unref(flowData).nodeList;
-    let linkList = unref(flowData).linkList;
-    console.info(
-      '当前流程图中有 ' + nodeList.length + ' 个节点，有 ' + linkList.length + ' 条连线。',
-    );
-  }
-
   // 粘贴
   function paste() {
     let dis = 0;
@@ -506,25 +356,10 @@
     });
   }
 
-  // 全选
-  function selectAll() {
-    unref(flowData).nodeList.forEach((node: INode) => {
-      plumb.value.addToDragSelection(node.id);
-      unref(currentSelectGroup).push(node);
-    });
-  }
-
-  // 保存流程
-  function saveFlow() {
-    emits('saveFlow');
-  }
-
   // 复制节点
   function copyNode() {
     clipboard = [];
-    if (unref(currentSelectGroup).length > 0) {
-      clipboard = Object.assign([], unref(currentSelectGroup));
-    } else if (unref(currentSelect).id) {
+    if (unref(currentSelect).id) {
       clipboard.push(unref(currentSelect) as INode);
     }
   }
@@ -585,22 +420,6 @@
     // 开启快捷键
     emits('onShortcutKey');
   }
-  // 是否为多选行为
-  function isMultiple(callback: Fn) {
-    callback(rectangleMultiple.flag);
-  }
-  // 更新组节点信息
-  function updateNodePos() {
-    let nodeList = unref(flowData).nodeList;
-    unref(currentSelectGroup).forEach((node) => {
-      let dom = document.querySelector('#' + node.id) as HTMLElement;
-      let l = parseInt(dom?.style?.left);
-      let t = parseInt(dom?.style?.top);
-      let f = nodeList.find((n: INode) => n.id === node.id);
-      f.x = l;
-      f.y = t;
-    });
-  }
   // 更新节点可以状态
   function updateNodeDisable(node: INode) {
     let { disabled } = node;
@@ -611,7 +430,6 @@
 
   // 计算辅助线
   function alignForLine(e: Recordable) {
-    if (unref(currentSelectGroup).length > 1) return;
     if (container.auxiliaryLine.controlFnTimesFlag) {
       let elId = e.el.id;
       let nodeList = unref(flowData).nodeList;
@@ -691,13 +509,7 @@
       o.label = label;
       o.sourceId = conn.sourceId;
       o.targetId = conn.targetId;
-      o.sourceEndpoint = conn.sourceEndpoint.getParameters().endpoint;
-      o.targetEndpoint = conn.targetEndpoint.getParameters().endpoint;
-      o.cls = {
-        linkType: unref(flowConfig).jsPlumbInsConfig.Connector?.[0],
-        linkColor: unref(flowConfig).jsPlumbInsConfig.PaintStyle?.stroke,
-        linkThickness: unref(flowConfig).jsPlumbInsConfig.PaintStyle?.strokeWidth,
-      };
+
       document.querySelector('#' + id)?.addEventListener('contextmenu', (e: Event) => {
         showLinkContextMenu(e);
         currentSelect.value = flowData.value.linkList.find((l: ILink) => l.id === id);
@@ -709,13 +521,8 @@
       });
 
       if (status.value !== FlowStatusEnum.LOADING) {
-        delete o.cls;
         flowData.value.linkList.push(o);
       }
-    });
-
-    unref(plumb).importDefaults({
-      ConnectionsDetachable: unref(flowConfig).jsPlumbConfig.conn.isDetachable,
     });
   }
 
@@ -731,12 +538,7 @@
       }
       if (flowData.value.linkList && flowData.value.linkList.length > 0) {
         flowData.value.linkList.forEach((item) => {
-          __addLink(
-            plumb.value,
-            { id: item.sourceId, endpoint: item.sourceEndpoint },
-            { id: item.targetId, endpoint: item.targetEndpoint },
-            { id: item.id, label: item.label },
-          );
+          __addLink(plumb.value, item.sourceId, item.targetId, { id: item.id, label: item.label });
         });
       }
     } catch (e) {
@@ -830,7 +632,6 @@
 
   defineExpose({
     container,
-    rectangleMultiple,
     deleteNode,
     zoomOut,
     zoomIn,
@@ -861,22 +662,6 @@
     () => currentSelect.value,
     (val) => {
       emits('update:select', val);
-    },
-    { deep: true },
-  );
-
-  watch(
-    () => props.selectGroup,
-    (val) => {
-      currentSelectGroup.value = val;
-      if (unref(currentSelectGroup).length <= 0) plumb.value.clearDragSelection();
-    },
-  );
-
-  watch(
-    () => currentSelectGroup.value,
-    (val) => {
-      emits('update:selectGroup', val);
     },
     { deep: true },
   );

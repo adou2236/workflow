@@ -1,4 +1,4 @@
-import { ToolsTypeEnum, NodeTypeEnum, CommonNodeTypeEnum, HighNodeTypeEnum, LaneNodeTypeEnum, FLOW_TYPE } from './enums';
+import { ToolsTypeEnum, NodeTypeEnum, CommonNodeTypeEnum, HighNodeTypeEnum, LaneNodeTypeEnum } from './enums';
 import { settingConfig } from '../config/flow';
 export declare type NodesType = CommonNodeTypeEnum | HighNodeTypeEnum | LaneNodeTypeEnum;
 export interface IDragInfo extends IElement {
@@ -12,10 +12,7 @@ export interface ITool {
 export interface IElement {
     type: NodesType;
     nodeName: string;
-    flowType: FLOW_TYPE;
     icon: string;
-    inputs: string[];
-    outputs: string[];
     args?: string[];
     parameters?: {
         options: any;
@@ -27,8 +24,6 @@ export interface INode extends IElement {
     x: number;
     y: number;
     displayName?: string;
-    description?: string;
-    disabled?: boolean;
     value?: object;
 }
 export interface ILink {

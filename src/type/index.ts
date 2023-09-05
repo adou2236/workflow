@@ -4,7 +4,6 @@ import {
   CommonNodeTypeEnum,
   HighNodeTypeEnum,
   LaneNodeTypeEnum,
-  FLOW_TYPE,
 } from './enums';
 
 import { settingConfig } from '@/config/flow';
@@ -24,10 +23,7 @@ export interface ITool {
 export interface IElement {
   type: NodesType;
   nodeName: string; //节点唯一名称
-  flowType: FLOW_TYPE; // 节点角色 触发器or响应器
   icon: string; // string or http
-  inputs: string[];
-  outputs: string[];
   args?: string[]; // 模拟形参
   parameters?: {
     options: any;
@@ -40,8 +36,6 @@ export interface INode extends IElement {
   x: number;
   y: number;
   displayName?: string; //节点展示名称
-  description?: string; //节点描述
-  disabled?: boolean; //是否禁用
   value?: object; // 节点内表单
 }
 

@@ -4,6 +4,8 @@
   height: 100%;
   overflow: hidden;
   position: relative;
+  background: url('../images/grid-bg.jpg') repeat left top;
+  background-size: 60px 60px;
 
   &__lineX {
     position: absolute;
@@ -24,10 +26,6 @@
     height: 10000px;
     position: relative;
 
-    &.grid {
-      background: url('../images/grid-bg.jpg') repeat left top;
-      background-size: 60px 60px;
-    }
 
     &.canDrag {
       cursor: grab;

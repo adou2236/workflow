@@ -8,8 +8,8 @@ export const settingConfig = {
     onceEnlarge: 0.1,
   },
   cls: {
-    linkType: 'Bezier',
-    linkColor: variable['rect-color'],
+    linkType: 'Flowchart',
+    linkColor: variable['line-color'],
     linkThickness: 2,
   },
   other: {
@@ -24,7 +24,7 @@ const jsPlumbInsConfig: Defaults = {
   Connector: [
     settingConfig.cls.linkType,
     {
-      gap: 5,
+      gap: 0,
       cornerRadius: 8,
       alwaysRespectStubs: true,
     },
@@ -39,63 +39,26 @@ const jsPlumbInsConfig: Defaults = {
       },
     ],
   ],
+  ConnectionsDetachable: false, // 不可重连
   PaintStyle: {
     stroke: settingConfig.cls.linkColor,
     strokeWidth: settingConfig.cls.linkThickness,
   },
-  HoverPaintStyle: {
-    stroke: variable['primary-color'],
-    strokeWidth: 3,
-  },
+  HoverPaintStyle: { stroke: '#ff00cc', strokeWidth: 3 },
   EndpointStyle: {
-    fill: '#456',
-    stroke: '#2a2929',
-    strokeWidth: 1,
+    fill: 'none',
+    stroke: 'none',
+    strokeWidth: 0,
   },
   EndpointHoverStyle: {
-    fill: 'pink',
-  },
-};
-
-const jsPlumbConfig = {
-  anchor: {
-    default: ['Bottom', 'Right', 'Top', 'Left'],
-  },
-  conn: {
-    isDetachable: false,
-  },
-  makeSourceConfig: {
-    filter: 'a',
-    filterExclude: true,
-    source: true,
-    target: false,
-    maxConnections: -1,
-    endpoint: 'Dot',
-    connectionsDirected: true,
-    anchor: ['Right'],
-  },
-  makeTargetConfig: {
-    filter: 'a',
-    filterExclude: true,
-    source: false,
-    target: true,
-    maxConnections: -1,
-    endpoint: 'Rectangle',
-    paintStyle: {
-      width: 8,
-      height: 12,
-      fill: '#F00',
-      stroke: '#F00',
-      lineWidth: 0,
-    },
-    anchor: ['Left'],
+    fill: 'none',
   },
 };
 
 const defaultStyle = {
   showGrid: true,
   dragOpacity: 0.7,
-  alignGridPX: [5, 5], // 最小步长
+  alignGridPX: [15, 15], // 最小步长
   alignSpacing: {
     horizontal: settingConfig.other.horizontal,
     vertical: settingConfig.other.vertical,
@@ -116,7 +79,6 @@ const defaultStyle = {
 
 export const flowConfig = {
   jsPlumbInsConfig,
-  jsPlumbConfig,
   defaultStyle,
 };
 
