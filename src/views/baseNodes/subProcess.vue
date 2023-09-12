@@ -7,8 +7,7 @@
 
 <script lang="ts" setup>
   import 'bpmn-font/dist/css/bpmn.css';
-  import DraggableResizableVue from 'draggable-resizable-vue3';
-  import { computed, nextTick, onMounted, PropType, reactive, watch } from 'vue';
+  import { computed, ref, onMounted, PropType, reactive, watch, unref } from 'vue';
   import { INode } from '@/type';
   import { UIGroup } from '@jsplumb/browser-ui';
   const props = defineProps({
@@ -38,8 +37,8 @@
         currentNode.bound.width = props.plumb?.getNodeBasicConfig(props.node).width;
         currentNode.bound.height = props.plumb?.getNodeBasicConfig(props.node).height;
       } else {
-        currentNode.bound.width = 800;
-        currentNode.bound.height = 400;
+        currentNode.bound.width = currentNode?.properties.width || 300;
+        currentNode.bound.height = currentNode?.properties.height || 200;
       }
     },
     {
@@ -55,13 +54,13 @@
   }
 
   function handleCollapse() {
-    let currentGroup: UIGroup = props.plumb.getGroup(currentNode.id);
+    let currentGroup: UIGroup = unref(props.plumb).getGroup(currentNode.id);
     if (isExpanded.value) {
-      props.plumb.collapseGroup(currentNode.id);
+      unref(props.plumb).collapseGroup(currentNode.id);
       currentGroup.droppable = false;
       currentNode.properties.isExpanded = false;
     } else {
-      props.plumb.expandGroup(currentNode.id);
+      unref(props.plumb).expandGroup(currentNode.id);
       currentGroup.droppable = true;
       currentNode.properties.isExpanded = true;
     }

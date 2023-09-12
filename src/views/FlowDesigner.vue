@@ -139,7 +139,9 @@
       {
         type: 'bpmn:subProcess',
         properties: {
-          isExpanded: false,
+          isExpanded: true,
+          width: 800,
+          height: 400,
         },
         id: 'bpmn:subProcess-8e9b6c1a38164a3dab3947d4962b68d6',
         bound: {
@@ -157,6 +159,8 @@
         type: 'bpmn:subProcess',
         properties: {
           isExpanded: false,
+          width: 400,
+          height: 200,
         },
         id: 'bpmn:subProcess-083571aa61b544c4818e2cc53b626404',
         bound: {

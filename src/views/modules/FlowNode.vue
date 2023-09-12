@@ -1,12 +1,12 @@
 <template>
-  <div
+  <draggable-resizable-vue
     :id="node.id"
     ref="nodeRef"
-    class="node-box"
+    class-name="node-box"
     :class="[
       {
-        disabled: node.disabled,
-        active: isActive(),
+        'jtk-group-expanded': node.type === 'bpmn:subProcess' && node.properties.isExpanded,
+        'jtk-group-collapsed': node.type === 'bpmn:subProcess' && !node.properties.isExpanded,
       },
       node.flowType,
     ]"
@@ -14,7 +14,19 @@
       width: node.bound.width + 'px',
       height: node.bound.height + 'px',
       cursor: 'move',
+      transform: 'none',
     }"
+    handles-type="borders"
+    :handles-size="24"
+    :x="0"
+    :y="0"
+    :minWidth="200"
+    :minHeight="200"
+    :width="node.bound.width"
+    :height="node.bound.height"
+    @resizing="onResizing"
+    :active="node.type === 'bpmn:subProcess' && node.properties.isExpanded"
+    :draggable="false"
     :data-x="node.bound.x"
     :data-y="node.bound.y"
     @contextmenu.stop="showNodeContextMenu(node)"
@@ -56,11 +68,12 @@
         <p v-if="node.disabled">(禁用)</p>
       </div>
     </div>
-  </div>
+  </draggable-resizable-vue>
 </template>
 
 <script lang="ts" setup>
-  import { ref, unref, watch, onMounted, PropType, reactive, computed, onBeforeUnmount } from 'vue';
+  import DraggableResizableVue from 'draggable-resizable-vue3';
+  import { ref, unref, watch, onMounted, PropType, reactive, onBeforeUnmount } from 'vue';
   import { INode, IEdge } from '@/type';
   import { VideoPlay } from '@element-plus/icons-vue';
   import Nodes from '../baseNodes/index';
@@ -76,6 +89,10 @@
     },
     config: {
       type: Object,
+      default: () => ({}),
+    },
+    vNode: {
+      type: Object as PropType<INode>,
       default: () => ({}),
     },
     node: {
@@ -105,8 +122,17 @@
     'showNodeContextMenu',
   ]);
 
+  defineExpose({
+    Nodes,
+  });
+
   // 当前节点信息
   const currentNode = reactive(props.node);
+
+  const element = reactive({
+    x: 0,
+    y: 0,
+  });
 
   // 当前选择的节点
   const currentSelect = ref(props.select);
@@ -127,7 +153,30 @@
     error: 'CircleCloseFilled',
   });
 
-  // 点击节点
+  function onResizing(left, top, width, height) {
+    if (currentNode.type === 'bpmn:subProcess' && props.plumb) {
+      let changeX = left - element.x;
+      let changeY = top - element.y;
+      let group = unref(props.plumb).getGroupFor(document.getElementById(props.node.id));
+      let parent;
+      if (group) {
+        parent = props.nodes.find((item) => item.id === group.elId);
+      }
+      currentNode.bound.x += changeX;
+      currentNode.bound.y += changeY;
+      unref(props.plumb).setPosition(document.getElementById(props.node.id)!, {
+        x: currentNode.bound.x - (parent?.bound.x || 0),
+        y: currentNode.bound.y - (parent?.bound.y || 0),
+      });
+      currentNode.bound.width = width;
+      currentNode.bound.height = height;
+      currentNode.properties.width = width;
+      currentNode.properties.height = height;
+      element.x = left;
+      element.y = top;
+    }
+  }
+  // 选中节点
   function selectNode() {
     currentSelect.value = currentNode;
     currentSelectGroup.value = [];
@@ -217,10 +266,10 @@
   }
   //执行观察
   onMounted(() => {
-    if (window.MutationObserver || window.WebKitMutationObserver || window.MozMutationObserver) {
-      observer.value = new MutationObserver(setAttrs);
-    }
-    observer.value?.observe(nodeRef.value, { attributes: true });
+    // if (window.MutationObserver || window.WebKitMutationObserver || window.MozMutationObserver) {
+    //   observer.value = new MutationObserver(setAttrs);
+    // }
+    // observer.value?.observe(nodeRef.value, { attributes: true });
   });
 
   onBeforeUnmount(() => {

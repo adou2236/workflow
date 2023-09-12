@@ -43,7 +43,7 @@
         v-model:selectGroup="currentSelectGroup"
         @showNodeContextMenu="showNodeContextMenu"
         @updateNodeDisable="updateNodeDisable"
-        @nodeDelete="deleteNode"
+        @nodeDelete="nodeDelete"
         @setNodeParams="(v) => emits('setNodeParams', v)"
       >
         <!--        是否选用树型结构-->
@@ -65,7 +65,7 @@
     unref,
     watch,
   } from 'vue';
-  import { getZoomToFit, scaleBigger, scaleSmaller, utils } from '@/utils/common';
+  import { arrayToTree, getZoomToFit, scaleBigger, scaleSmaller, utils } from '@/utils/common';
   import FlowNode from './FlowNode.vue';
   import { useContextMenu } from '@/hooks/useContextMenu';
   import { FlowStatusEnum, NodeType } from '@/type/enums';
@@ -142,6 +142,21 @@
   const flowData = computed(() => {
     return props.data;
   });
+
+  // 网格信息
+  const gridStyle = computed(() => {
+    return {
+      top: `${container.pos.top}px`,
+      left: `${container.pos.left}px`,
+      transform: `scale(${container.scale})`,
+      transformOrigin: `${container.scaleOrigin.x}px ${container.scaleOrigin.y}px`,
+    };
+  });
+
+  // 虚拟节点树
+  const visualNodeTree = computed(() => {
+    return arrayToTree(unref(flowData).nodes);
+  });
   watch(
     () => props.data,
     () => {
@@ -207,15 +222,6 @@
 
   // 剪切板内容
   let clipboard: INode[] = [];
-
-  const gridStyle = computed(() => {
-    return {
-      top: `${container.pos.top}px`,
-      left: `${container.pos.left}px`,
-      transform: `scale(${container.scale})`,
-      transformOrigin: `${container.scaleOrigin.x}px ${container.scaleOrigin.y}px`,
-    };
-  });
 
   function handleDragover(e: MouseEvent) {
     e.preventDefault();
@@ -292,6 +298,18 @@
     unref(flowData).nodes.push(newNode);
     emits('update:data', unref(flowData));
     nextTick(() => {
+      // 设置位置
+      flowData.value.nodes.forEach((item) => {
+        let group = unref(plumb).getGroupFor(document.getElementById(item.id));
+        let parent;
+        if (group) {
+          parent = flowData.value.nodes.find((item) => item.id === group.elId);
+        }
+        unref(plumb).setPosition(document.getElementById(item.id)!, {
+          x: item.bound.x - (parent?.bound.x || 0),
+          y: item.bound.y - (parent?.bound.y || 0),
+        });
+      });
       unref(plumb).addNode(newNode);
     });
   }
@@ -396,7 +414,7 @@
         },
         {
           handler: () => {
-            deleteNode(node.id);
+            nodeDelete(node.id);
           },
           label: '删除节点',
         },
@@ -457,7 +475,7 @@
   }
 
   // 删除节点
-  function deleteNode(deleteNodes: string[] | string) {
+  function nodeDelete(deleteNodes: string[] | string) {
     let nodes = unref(flowData).nodes;
     let arr: string[] = Array.isArray(deleteNodes) ? deleteNodes : [deleteNodes];
 
@@ -789,16 +807,19 @@
   }
 
   // 数据初始化
+  // TODO 待优化 -- 数据管理机制获取指定节点
   function dataInit() {
     if (!unref(plumb)) return;
     status.value = FlowStatusEnum.LOADING;
     unref(plumb).setSuspendDrawing(true);
     try {
       if (flowData.value.nodes && flowData.value.nodes.length > 0) {
+        // 添加节点
         flowData.value.nodes.forEach((item) => {
           unref(plumb).addNode(item);
         });
-        // have some plb
+        // 添加到组
+        // TODO 存在某些问题
         flowData.value.nodes.forEach((item) => {
           if (item.children && item.children.length > 0) {
             unref(plumb).addToGroup(
@@ -806,6 +827,18 @@
               ...item.children.map((i) => document.getElementById(i)),
             );
           }
+        });
+        // 设置位置
+        flowData.value.nodes.forEach((item) => {
+          let group = unref(plumb).getGroupFor(document.getElementById(item.id));
+          let parent;
+          if (group) {
+            parent = flowData.value.nodes.find((item) => item.id === group.elId);
+          }
+          unref(plumb).setPosition(document.getElementById(item.id)!, {
+            x: item.bound.x - (parent?.bound.x || 0),
+            y: item.bound.y - (parent?.bound.y || 0),
+          });
         });
       }
 
@@ -895,7 +928,7 @@
 
   defineExpose({
     container,
-    deleteNode,
+    nodeDelete,
     zoomOut,
     zoomIn,
     zoomFit,

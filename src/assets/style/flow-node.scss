@@ -26,6 +26,33 @@
     box-shadow: none;
   }
 
+  .node-anchor{
+    opacity: 0;
+    position: absolute;
+    width: 15px;
+    height: 15px;
+    border-radius: 10px;
+    cursor: crosshair;
+    background: -webkit-radial-gradient(sandybrown 10%, white 30%, #9a54ff 60%);
+    transform: translate(-50%, -50%);
+    &__top{
+      top: 0;
+      left: 50%;
+    }
+    &__right{
+      top: 50%;
+      left: 100%;
+    }
+    &__bottom{
+      top: 100%;
+      left: 50%;
+    }
+    &__left{
+      left: 0;
+      top: 50%
+    }
+  }
+
   // TODO 改成scss
   &[status=success] {
     border-color: $success-color
@@ -136,14 +163,22 @@
   }
 }
 .flow-area__container:not(.readOnly) .node-box{
-  &:hover > .node-tools{
+  &:hover,&.active{
+    .node-tools{
       opacity: 1;
       pointer-events: auto;
     }
+    &>.node-anchor{
+      opacity: 1;
+    }
+  }
   &:not(.disabled):hover {
     z-index: 2;
     .node-setting{
       visibility: visible;
+    }
+    &>.node-anchor{
+      opacity: 1;
     }
   }
 }

@@ -1,6 +1,7 @@
 import { idType as flowIdType } from '@/config/flow';
 import { IdTypeEnum } from '@/type/enums';
 import { INode, IZoomConfig } from '@/type';
+import { cloneDeep } from 'lodash-es';
 
 const NODE_SIZE = 40;
 export const utils = {
@@ -253,4 +254,26 @@ export const scaleBigger = ({ scale, x, y }: IZoomConfig): IZoomConfig => {
     x,
     y,
   };
+};
+
+export const arrayToTree = (arr) => {
+  const map = {}; // 用于存储节点的映射，以便快速查找
+  const tree = cloneDeep(arr); // 最终的树结构
+
+  // 首先将所有节点存储到映射中
+  for (const item of tree) {
+    map[item.id] = item; // 创建节点对象，并存储到映射中
+  }
+
+  // 遍历映射，将子节点添加到父节点的 children 数组中
+  for (const item of tree) {
+    if (item.children && item.children.length > 0) {
+      item.children = item.children.map((o) => map[o]);
+      item.children.forEach((i) => {
+        i.parent = item.id;
+      });
+    }
+  }
+
+  return tree.filter((item) => !item.parent);
 };

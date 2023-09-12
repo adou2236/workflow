@@ -139,7 +139,6 @@ class PlumbRegister {
    */
   addNode = (node: INode) => {
     const backNode = event?.backNode || null;
-    this.instance.setPosition(document.getElementById(node.id)!, node.bound);
     const endpoints = this.addEndpoints(node);
     endpoints.forEach((anchor) => {
       this.instance.addEndpoint(document.getElementById(node.id)!, anchor);
@@ -150,9 +149,9 @@ class PlumbRegister {
         el: document.getElementById(node.id)!,
         id: node.id,
         constrain: true,
-        proxied: false,
+        proxied: true,
       });
-      if (!node.properties.isExpanded) {
+      if (!node.properties?.isExpanded) {
         setTimeout(() => {
           this.instance.collapseGroup(group);
         });
