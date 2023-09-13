@@ -54,13 +54,13 @@
   }
 
   function handleCollapse() {
-    let currentGroup: UIGroup = unref(props.plumb).getGroup(currentNode.id);
+    let currentGroup: UIGroup = props.plumb.getGroup(currentNode.id);
     if (isExpanded.value) {
-      unref(props.plumb).collapseGroup(currentNode.id);
+      props.plumb.collapseGroup(currentNode.id);
       currentGroup.droppable = false;
       currentNode.properties.isExpanded = false;
     } else {
-      unref(props.plumb).expandGroup(currentNode.id);
+      props.plumb.expandGroup(currentNode.id);
       currentGroup.droppable = true;
       currentNode.properties.isExpanded = true;
     }

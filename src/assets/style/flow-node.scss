@@ -10,6 +10,7 @@
   background-color: transparent;
   white-space: nowrap;
   box-sizing: border-box;
+  z-index: auto!important;
   &.active {
     outline: 2px solid $common-node-active;
     outline-offset: 4px;
@@ -164,7 +165,7 @@
 }
 .flow-area__container:not(.readOnly) .node-box{
   &:hover,&.active{
-    .node-tools{
+    &>.node-tools{
       opacity: 1;
       pointer-events: auto;
     }
@@ -174,7 +175,7 @@
   }
   &:not(.disabled):hover {
     z-index: 2;
-    .node-setting{
+    &>.node-setting{
       visibility: visible;
     }
     &>.node-anchor{

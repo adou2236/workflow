@@ -30,7 +30,7 @@ export interface INode extends OriginNode {
   id: string;
   bound: Bound;
   text?: Text;
-  children: string[];
+  children: INode[];
 }
 
 export interface IEdge {

@@ -139,7 +139,7 @@
       {
         type: 'bpmn:subProcess',
         properties: {
-          isExpanded: true,
+          isExpanded: false,
           width: 800,
           height: 400,
         },
@@ -153,97 +153,44 @@
         text: {
           value: '子流程',
         },
-        children: ['bpmn:subProcess-083571aa61b544c4818e2cc53b626404'],
-      },
-      {
-        type: 'bpmn:subProcess',
-        properties: {
-          isExpanded: false,
-          width: 400,
-          height: 200,
-        },
-        id: 'bpmn:subProcess-083571aa61b544c4818e2cc53b626404',
-        bound: {
-          width: 400,
-          height: 200,
-          x: 264,
-          y: 254,
-        },
-        text: {
-          value: '子流程',
-        },
-        children: ['bpmn:inclusiveGateway-4f5cf1e475d442c48ead915ba14b81a1'],
-      },
-      {
-        type: 'bpmn:inclusiveGateway',
-        properties: {
-          parameters: {
-            options: {
-              form: {
-                labelPosition: 'right',
-                size: 'mini',
-                labelWidth: '125px',
-                hideRequiredAsterisk: false,
-                showMessage: true,
-                inlineMessage: false,
-              },
-              submitBtn: true,
-              resetBtn: true,
+        children: [
+          {
+            type: 'bpmn:subProcess',
+            properties: {
+              isExpanded: false,
+              width: 400,
+              height: 200,
             },
-            rule: [
+            id: 'bpmn:subProcess-083571aa61b544c4818e2cc53b626404',
+            bound: {
+              width: 400,
+              height: 200,
+              x: 30,
+              y: 30,
+            },
+            text: {
+              value: '子流程',
+            },
+            children: [
               {
-                type: 'input',
-                field: 'Fgl35zs712gen',
-                title: '输入框',
-                info: '',
-                _fc_drag_tag: 'input',
-                hidden: false,
-                display: true,
-              },
-              {
-                type: 'inputNumber',
-                field: 'F7ap5zs712ub0',
-                title: '计数器',
-                info: '',
-                _fc_drag_tag: 'inputNumber',
-                hidden: false,
-                display: true,
-              },
-              {
-                type: 'radio',
-                field: 'Fmpd5zs7137v5',
-                title: '单选框',
-                info: '',
-                effect: {
-                  fetch: '',
+                type: 'bpmn:inclusiveGateway',
+                properties: {
+                  parameters: {},
                 },
-                options: [
-                  {
-                    value: '1',
-                    label: '选项1',
-                  },
-                  {
-                    value: '2',
-                    label: '选项2',
-                  },
-                ],
-                _fc_drag_tag: 'radio',
-                hidden: false,
-                display: true,
+                id: 'bpmn:inclusiveGateway-4f5cf1e475d442c48ead915ba14b81a1',
+                bound: {
+                  width: 50,
+                  height: 50,
+                  x: 10,
+                  y: 10,
+                },
+                text: {
+                  value: '包容网关',
+                },
               },
             ],
           },
-        },
-        id: 'bpmn:inclusiveGateway-4f5cf1e475d442c48ead915ba14b81a1',
-        bound: {
-          width: 50,
-          height: 50,
-          x: 360,
-          y: 295,
-        },
-        text: {
-          value: '包容网关',
-        },
+        ],
       },
     ],
     edges: [],

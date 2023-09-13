@@ -47,9 +47,6 @@
         </el-icon>
       </el-tooltip>
     </div>
-    <!--    <div class="node-setting">-->
-    <!--      <el-icon @click="setNodeParams(node)"><Tools /></el-icon>-->
-    <!--    </div>-->
     <component
       v-if="plumb"
       :is="Nodes[node.type]"
@@ -68,6 +65,20 @@
         <p v-if="node.disabled">(禁用)</p>
       </div>
     </div>
+    <flow-node
+      v-for="n in node.children"
+      :key="n.id"
+      :node="n"
+      :nodes="nodes"
+      :plumb="plumb"
+      :config="config"
+      v-model:select="currentSelect"
+      v-model:selectGroup="currentSelectGroup"
+      @showNodeContextMenu="showNodeContextMenu"
+      @updateNodeDisable="updateNodeDisable"
+      @nodeDelete="nodeDelete"
+      @setNodeParams="(v) => emits('setNodeParams', v)"
+    />
   </draggable-resizable-vue>
 </template>
 
@@ -157,16 +168,11 @@
     if (currentNode.type === 'bpmn:subProcess' && props.plumb) {
       let changeX = left - element.x;
       let changeY = top - element.y;
-      let group = unref(props.plumb).getGroupFor(document.getElementById(props.node.id));
-      let parent;
-      if (group) {
-        parent = props.nodes.find((item) => item.id === group.elId);
-      }
       currentNode.bound.x += changeX;
       currentNode.bound.y += changeY;
       unref(props.plumb).setPosition(document.getElementById(props.node.id)!, {
-        x: currentNode.bound.x - (parent?.bound.x || 0),
-        y: currentNode.bound.y - (parent?.bound.y || 0),
+        x: currentNode.bound.x,
+        y: currentNode.bound.y,
       });
       currentNode.bound.width = width;
       currentNode.bound.height = height;

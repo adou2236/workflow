@@ -1,16 +1,18 @@
 import { Endpoint, EndpointOptions, newInstance } from '@jsplumb/browser-ui';
 import type { BrowserJsPlumbInstance, BrowserJsPlumbDefaults } from '@jsplumb/browser-ui/types';
-import { IEdge, INode, OriginNode } from '@/type';
+import { IEdge, INode, IProcess, OriginNode } from '@/type';
 import { NodeType } from '@/type/enums';
 import { BPMNAdapter } from '@/utils/bpmnAdapter/index_new';
 import { cloneDeep } from 'lodash-es';
-import { extraProps } from '@/config/const';
-import { nextTick, unref } from 'vue';
+import { extraProps, NODE_SIZE } from '@/config/const';
+import { utils } from '@/utils/common';
 
 class PlumbRegister {
   public instance: { [key: string]: any } & BrowserJsPlumbInstance;
   public readonly = false;
+  public nodeMap = {};
   public adapter;
+  public value: IProcess;
   private registerNodes: OriginNode[] = [];
   private endpoints = [
     {
@@ -30,16 +32,22 @@ class PlumbRegister {
       pos: [0, 0.5, -1, 0], //left
     },
   ];
-  constructor(config: BrowserJsPlumbDefaults) {
+  constructor(config: BrowserJsPlumbDefaults, value) {
     this.instance = newInstance(config);
+    this.value = value; // 画布数据
+    this.nodeMap = this.getNodeMap(value.nodes);
     this.adapter = new BPMNAdapter({ lf: this.instance, props: extraProps });
     this.eventRegister();
     this.instance.addNode = this.addNode;
     this.instance.addEdge = this.addEdge;
     this.instance.nodeRegister = this.nodeRegister;
-    this.instance.deleteNode = this.deleteNode;
+    this.instance.nodeDelete = this.nodeDelete;
     this.instance.getNodeBasicConfig = this.getNodeBasicConfig;
     this.instance.setReadOnly = this.setReadOnly;
+    this.instance.getNode = this.getNode;
+    this.instance.newNodeInit = this.newNodeInit;
+    this.instance.nodeMap = this.nodeMap;
+    this.instance.value = this.value;
     return this.instance;
   }
 
@@ -135,32 +143,78 @@ class PlumbRegister {
 
   /**
    * 新增节点
-   * @param node
+   * @param node 节点信息 非node实例
+   * @param isNew 是否是新增节点
    */
-  addNode = (node: INode) => {
+  addNode = (node: INode, isNew = false) => {
     const backNode = event?.backNode || null;
+    this.instance.setPosition(document.getElementById(node.id)!, {
+      x: node.bound.x,
+      y: node.bound.y,
+    });
     const endpoints = this.addEndpoints(node);
     endpoints.forEach((anchor) => {
       this.instance.addEndpoint(document.getElementById(node.id)!, anchor);
     });
-    // 拖拽子任务
+    // 子任务
     if (node.type === NodeType.SUB_PROCESS) {
-      const group = this.instance.addGroup({
+      this.instance.addGroup({
         el: document.getElementById(node.id)!,
         id: node.id,
         constrain: true,
         proxied: true,
+        collapsed: !node.properties?.isExpanded,
       });
-      if (!node.properties?.isExpanded) {
-        setTimeout(() => {
-          this.instance.collapseGroup(group);
+      // // TODO 压缩状态下的子节点初始化定位会存在问题，方法待优化
+      // if (!node.properties?.isExpanded) {
+      //   setTimeout(() => {
+      //     this.instance.collapseGroup(group);
+      //   });
+      // }
+      if (node.children && node.children.length > 0) {
+        node.children.forEach((item) => {
+          this.addNode(item);
         });
+        this.instance.addToGroup(
+          node.id,
+          ...node.children.map((n) => document.getElementById(n.id)!),
+        );
       }
     }
-    // 拖拽进入子任务
+    // 进入子任务
     if (backNode) {
       this.instance.addToGroup(backNode.id, document.getElementById(node.id)!);
     }
+
+    if (isNew) {
+      this.nodeMap = this.getNodeMap(this.value.nodes);
+    }
+  };
+
+  /**
+   * 新节点数据初始化
+   * 位置，尺寸，文本等赋初值
+   * @param node
+   */
+  newNodeInit = (node) => {
+    const { offsetX, offsetY } = event;
+    const x = offsetX;
+    const y = offsetY;
+    const newNode = cloneDeep(node) as INode;
+    delete newNode.basicConfig;
+    newNode.id = newNode.type + '-' + utils.getId();
+    // 位置矫正
+    newNode.bound = {
+      width: this.instance.getNodeBasicConfig(node)?.width || NODE_SIZE,
+      height: this.instance.getNodeBasicConfig(node)?.height || NODE_SIZE,
+      x: x - (this.instance.getNodeBasicConfig(node)?.width || NODE_SIZE) / 2,
+      y: y - (this.instance.getNodeBasicConfig(node)?.height || NODE_SIZE) / 2,
+    };
+    // 设置文字内容
+    newNode.text = {
+      value: this.instance.getNodeBasicConfig(node)?.name,
+    };
+    return newNode;
   };
 
   /**
@@ -241,20 +295,6 @@ class PlumbRegister {
     });
     return conns1.concat(conns2);
   };
-  /**
-   * 删除节点
-   * @param deleteNodes
-   */
-  deleteNode = (deleteNodes: string[] | string) => {
-    const arr: string[] = Array.isArray(deleteNodes) ? deleteNodes : [deleteNodes];
-    arr.forEach((c) => {
-      try {
-        this.instance.deleteConnectionsForElement(document.getElementById(c));
-        this.instance.selectEndpoints({ element: document.getElementById(c) }).deleteAll();
-        this.instance.removeGroup(this.instance.getGroup(c), true);
-      } catch (e) {}
-    });
-  };
 
   /**
    * 设置只读
@@ -267,6 +307,78 @@ class PlumbRegister {
     Array.from(nodes).forEach((node) => {
       this.instance.setDraggable(node, !flag);
     });
+  };
+
+  /**
+   * 删除节点
+   * @param nodeId
+   */
+  nodeDelete = (nodeId: string) => {
+    const children = this.nodeMap[nodeId].children;
+    // 子元素元素删除
+    if (children && children.length > 0) {
+      console.log(children);
+      children.forEach((c) => {
+        console.log(
+          c.id,
+          document.getElementById(c.id),
+          this.instance.selectEndpoints({ element: document.getElementById(c.id) }),
+        );
+        try {
+          this.instance.deleteConnectionsForElement(document.getElementById(c.id));
+          this.instance.selectEndpoints({ element: document.getElementById(c.id) }).deleteAll();
+          this.instance.removeGroup(this.instance.getGroup(c.id), true);
+        } catch (e) {}
+      });
+    }
+    try {
+      this.instance.deleteConnectionsForElement(document.getElementById(nodeId));
+      this.instance.selectEndpoints({ element: document.getElementById(nodeId) }).deleteAll();
+      this.instance.removeGroup(this.instance.getGroup(nodeId), true);
+    } catch (e) {}
+    // 数据上删除
+    function deleteNode(tree, nodeIdToDelete) {
+      tree.forEach((item, index) => {
+        if (item.id === nodeIdToDelete) {
+          tree.splice(index, 1);
+          return;
+        }
+        if (item.children && item.children.length > 0) {
+          deleteNode(item.children, nodeIdToDelete);
+        }
+      });
+    }
+    deleteNode(this.value.nodes, nodeId);
+    this.nodeMap = this.getNodeMap(this.value.nodes);
+  };
+
+  /**
+   * 获取指定节点
+   * @param nodeId
+   */
+  getNode = (nodeId: string) => {
+    return this.nodeMap[nodeId];
+  };
+  /**
+   * 获取父节点
+   * @param nodeId
+   */
+  getParent = (nodeId: string) => {
+    return this.nodeMap[nodeId]?.parentId ? this.nodeMap[this.nodeMap[nodeId].parentId] : null;
+  };
+
+  /**
+   * 获取节点索引
+   */
+  getNodeMap = (arr: INode[], parentId: string | null = null) => {
+    let map = {};
+    arr.forEach((item) => {
+      map[item.id] = { ...item, parentId: parentId };
+      if (item.children && item.children.length > 0) {
+        map = { ...map, ...this.getNodeMap(item.children, item.id) };
+      }
+    });
+    return map;
   };
 }
 

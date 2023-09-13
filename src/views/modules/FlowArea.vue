@@ -38,16 +38,13 @@
         :nodes="flowData.nodes"
         :plumb="plumb"
         :config="flowConfig"
-        @click.stop
         v-model:select="currentSelect"
         v-model:selectGroup="currentSelectGroup"
         @showNodeContextMenu="showNodeContextMenu"
         @updateNodeDisable="updateNodeDisable"
         @nodeDelete="nodeDelete"
         @setNodeParams="(v) => emits('setNodeParams', v)"
-      >
-        <!--        是否选用树型结构-->
-      </flow-node>
+      />
     </div>
   </div>
 </template>
@@ -143,6 +140,11 @@
     return props.data;
   });
 
+  // 平铺节点列表
+  const flatNodes = computed(() => {
+    return [];
+  });
+
   // 网格信息
   const gridStyle = computed(() => {
     return {
@@ -153,10 +155,6 @@
     };
   });
 
-  // 虚拟节点树
-  const visualNodeTree = computed(() => {
-    return arrayToTree(unref(flowData).nodes);
-  });
   watch(
     () => props.data,
     () => {
@@ -272,45 +270,18 @@
     };
   }
 
-  // 增加画布节点 相对于画布的绝对位置
+  // 增加画布节点 相对父级的相对位置
   function addNewNode(node: INode) {
     const { backNode } = event;
-    let x = mouse.position.x;
-    let y = mouse.position.y;
-    let nodePos = computeNodePos(x, y);
-    x = nodePos.x;
-    y = nodePos.y;
-
-    let newNode = cloneDeep(node) as INode;
-    delete newNode.basicConfig;
-    newNode.id = newNode.type + '-' + utils.getId();
-    // 位置矫正
-    newNode.bound = {
-      width: unref(plumb).getNodeBasicConfig(node)?.width || NODE_SIZE,
-      height: unref(plumb).getNodeBasicConfig(node)?.height || NODE_SIZE,
-      x: x - (unref(plumb).getNodeBasicConfig(node)?.width || NODE_SIZE) / 2,
-      y: y - (unref(plumb).getNodeBasicConfig(node)?.height || NODE_SIZE) / 2,
-    };
-    // 设置文字内容
-    newNode.text = {
-      value: unref(plumb).getNodeBasicConfig(node)?.name,
-    };
-    unref(flowData).nodes.push(newNode);
-    emits('update:data', unref(flowData));
+    let newNode = unref(plumb).newNodeInit(node);
+    if (backNode) {
+      backNode.children.push(newNode);
+    } else {
+      unref(flowData).nodes.push(newNode);
+    }
     nextTick(() => {
-      // 设置位置
-      flowData.value.nodes.forEach((item) => {
-        let group = unref(plumb).getGroupFor(document.getElementById(item.id));
-        let parent;
-        if (group) {
-          parent = flowData.value.nodes.find((item) => item.id === group.elId);
-        }
-        unref(plumb).setPosition(document.getElementById(item.id)!, {
-          x: item.bound.x - (parent?.bound.x || 0),
-          y: item.bound.y - (parent?.bound.y || 0),
-        });
-      });
-      unref(plumb).addNode(newNode);
+      unref(plumb).addNode(newNode, true);
+      emits('update:data', unref(flowData));
     });
   }
 
@@ -475,26 +446,15 @@
   }
 
   // 删除节点
+  // TODO 存在bug
   function nodeDelete(deleteNodes: string[] | string) {
-    let nodes = unref(flowData).nodes;
     let arr: string[] = Array.isArray(deleteNodes) ? deleteNodes : [deleteNodes];
 
     status.value = FlowStatusEnum.LOADING;
 
-    handleDelete(arr);
-
-    function handleDelete(arr) {
-      arr.forEach((c) => {
-        let inx = nodes.findIndex((node: INode) => node.id === c);
-        let node = nodes.find((node: INode) => node.id === c);
-        // 删除子链接信息
-        unref(plumb).deleteNode(c);
-        nodes.splice(inx, 1);
-        if (node?.children && node.children.length > 0) {
-          handleDelete(node.children);
-        }
-      });
-    }
+    arr.forEach((c) => {
+      unref(plumb).nodeDelete(c);
+    });
 
     status.value = FlowStatusEnum.CREATE;
     emits('update:data', unref(flowData));
@@ -606,10 +566,13 @@
 
   // 画布初始化
   function initJsPlumb() {
-    plumb.value = new plumbRegister({
-      container: document.getElementById('flowContainer'),
-      ...unref(flowConfig).jsPlumbInsConfig,
-    });
+    plumb.value = new plumbRegister(
+      {
+        container: document.getElementById('flowContainer'),
+        ...unref(flowConfig).jsPlumbInsConfig,
+      },
+      flowData.value,
+    );
     unref(plumb).nodeRegister(commonNodes);
   }
 
@@ -667,13 +630,16 @@
         type: 'Custom',
         options: {
           id: `${connection.id}__labelEditor`,
+          cssClass: 'overlay_editor',
           create: () => {
             const d = document.createElement('input');
             const label = connection.getOverlay(`${connection.id}__label`);
+            d.style.visibility = 'hidden';
             d.setAttribute('autofocus', 'true');
             d.value = label.getLabel();
             const func = () => {
-              connection.getOverlay(`${connection.id}__labelEditor`).setVisible(false);
+              connection.getOverlay(`${connection.id}__labelEditor`).canvas.style.visibility =
+                'hidden';
               label.setVisible(true);
               label.setLabel(d.value);
               flowData.value.edges.find((edge: IEdge) => edge.id === connection.id).text.value =
@@ -685,7 +651,6 @@
           location: 0.5,
         },
       });
-      connection.getOverlay(`${connection.id}__labelEditor`).setVisible(false);
     });
     // 拖拽开始
     unref(plumb).bind(EVENT_DRAG_START, ({ e, el, dragGroup }) => {
@@ -701,22 +666,18 @@
       }
     });
     // 拖拽结束
+    // TODO 结果改变 逻辑重做
     unref(plumb).bind(EVENT_DRAG_STOP, ({ e, el, elements, payload }) => {
       unref(ds).start();
       elements.forEach(({ el, e, pos, dropGroup, originalGroup }) => {
-        let currentNode = flowData.value.nodes.find((n) => n.id === el.id);
+        let currentNode = unref(plumb).getNode(el.id);
         currentNode.bound.x = pos.x;
         currentNode.bound.y = pos.y;
         if (dropGroup) {
           // 拖拽到组内
           unref(plumb).addToGroup(dropGroup.id, document.getElementById(currentNode.id));
-        } else if (originalGroup) {
-          // 组内拖拽，计算绝对位置
-          let parent = flowData.value.nodes.find((n) => n.id === originalGroup.elId);
-          currentNode.bound.x += parent.bound.x;
-          currentNode.bound.y += parent.bound.y;
         }
-
+        // TODO 可能存在问题
         // 更新端点位置
         let endpoints = unref(plumb).getEndpoints(el);
         endpoints.forEach((item) => {
@@ -744,7 +705,8 @@
             item.connector.segments,
           );
         });
-        updateGroupNodePos(currentNode);
+        // 多选存在问题
+        // updateGroupNodePos(currentNode);
       });
 
       // 是否为组
@@ -760,15 +722,24 @@
     });
     // 组添加新成员
     unref(plumb).bind(EVENT_GROUP_MEMBER_ADDED, ({ group, el, pos, sourceGroup }) => {
-      let parent = unref(flowData).nodes.find((item) => item.id === group.elId);
-      parent.children = [...new Set([el.id, ...(parent.children || [])])];
-      // unref(plumb).addToDragGroup(
-      //   { id: group.id, active: true },
-      //   ...group.children.map((i) => i.el),
-      // );
+      // TODO 新成员位置错误
+      if (sourceGroup) {
+        let node = unref(plumb).getNode(el.id);
+        node.bound.x = pos.x;
+        node.bound.y = pos.y;
+      }
     });
     // 组展开
-    unref(plumb).bind(EVENT_GROUP_EXPAND, ({ group }) => {});
+    unref(plumb).bind(EVENT_GROUP_EXPAND, ({ group }) => {
+      // 重新设置子节点的位置
+      let node = unref(plumb).getNode(group.id);
+      node.children.forEach((item) => {
+        unref(plumb).setPosition(document.getElementById(item.id)!, {
+          x: item.bound.x,
+          y: item.bound.y,
+        });
+      });
+    });
     // 连线断开
     unref(plumb).bind(EVENT_CONNECTION_DETACHED, ({ connection }) => {
       const edges = unref(flowData).edges;
@@ -789,11 +760,12 @@
       event.stopPropagation();
       const show = function () {
         connection.getOverlay(`${connection.id}__label`).setVisible(false);
-        connection.getOverlay(`${connection.id}__labelEditor`).setVisible(true);
+        connection.getOverlay(`${connection.id}__labelEditor`).canvas.style.visibility = 'visible';
       };
       const hide = function () {
+        event.preventDefault();
         connection.getOverlay(`${connection.id}__label`).setVisible(true);
-        connection.getOverlay(`${connection.id}__labelEditor`).setVisible(false);
+        connection.getOverlay(`${connection.id}__labelEditor`).canvas.style.visibility = 'hidden';
         window.removeEventListener('click', hide);
       };
       show();
@@ -817,28 +789,6 @@
         // 添加节点
         flowData.value.nodes.forEach((item) => {
           unref(plumb).addNode(item);
-        });
-        // 添加到组
-        // TODO 存在某些问题
-        flowData.value.nodes.forEach((item) => {
-          if (item.children && item.children.length > 0) {
-            unref(plumb).addToGroup(
-              item.id,
-              ...item.children.map((i) => document.getElementById(i)),
-            );
-          }
-        });
-        // 设置位置
-        flowData.value.nodes.forEach((item) => {
-          let group = unref(plumb).getGroupFor(document.getElementById(item.id));
-          let parent;
-          if (group) {
-            parent = flowData.value.nodes.find((item) => item.id === group.elId);
-          }
-          unref(plumb).setPosition(document.getElementById(item.id)!, {
-            x: item.bound.x - (parent?.bound.x || 0),
-            y: item.bound.y - (parent?.bound.y || 0),
-          });
         });
       }
 

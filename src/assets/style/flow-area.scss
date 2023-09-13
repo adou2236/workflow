@@ -7,7 +7,9 @@
 
   .jtk-connector { z-index:10001; }
   .jtk-endpoint { z-index:10000; }
-  .jtk-overlay { z-index:10002; }
+  .jtk-overlay {
+    z-index:10002;
+  }
   .jtk-group-collapsed {
     [data-jtk-managed]{
       display:none;
